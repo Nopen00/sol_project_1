@@ -1,0 +1,62 @@
+# ===== 비밀 정보 =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+wallet/
+Wallet_*/
+tnsnames.ora
+sqlnet.ora
+
+# ===== Node / React / TypeScript =====
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+.eslintcache
+
+# ===== Python / FastAPI =====
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+
+# ===== DB / DBeaver =====
+.dbeaver/
+dbeaver-data-sources*.xml
+.dbeaver-data-sources*.xml
+*.db
+*.sqlite3
+
+# ===== 공역 / 데이터 =====
+data/raw/
+backend/uploads/
+*.shp
+*.shx
+*.dbf
+*.prj
+*.gdb/
+*.csv
+*.xlsx
+# 공유할 소량 샘플은 예외로 허용
+!data/sample/**
+
+# ===== IDE / OS =====
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# ===== 로그 =====
+*.log
+logs/
