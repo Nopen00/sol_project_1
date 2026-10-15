@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>드론 기상 위험 지도</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css"
+    >
+</head>
+
+<body>
+    <div id="map"></div>
+
+    
+<button
+    id="menu-toggle"
+    class="menu-toggle"
+    type="button"
+    aria-label="제어 패널 열기 또는 닫기"
+    aria-controls="control-panel"
+    aria-expanded="true"
+>
+    ☰
+</button>
+
+<div id="control-panel" class="legend">
+    <h3>드론 기상 위험도</h3>
+
+    <div class="legend-item">
+        <span class="dot yellow"></span>
+        <span>주의</span>
+    </div>
+
+    <div class="legend-item">
+        <span class="dot orange"></span>
+        <span>경고</span>
+    </div>
+
+    <div class="legend-item">
+        <span class="dot red"></span>
+        <span>위험</span>
+    </div>
+
+    <div class="legend-item">
+        <span class="dot no-fly"></span>
+        <span>비행금지구역</span>
+    </div>
+
+    <div class="legend-item">
+        <span class="dot restricted"></span>
+        <span>비행제한구역</span>
+    </div>
+
+    <hr>
+
+    <h4>지역 선택</h4>
+
+    <label for="province-select">시·도</label>
+    <select id="province-select"></select>
+
+    <label for="city-select">시·군·구</label>
+    <select id="city-select"></select>
+
+    <button id="reset-map" class="reset-map" type="button">
+        ↺ 전국 지도로 돌아가기
+    </button>
+
+    <div id="status">
+        기상정보 준비 중...
+    </div>
+</div>
+
+
+    <script src="/static/js/weather.js"></script>
+    <script src="/static/js/grid-map.js"></script>
+    <script src="/static/js/risk-map.js"></script>
+    <script src="/static/js/airspace-map.js"></script>
+    <script src="/static/js/map.js"></script>
+    <script
+        src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_api_key }}&autoload=false"
+        onload="initMap()"
+        onerror="document.getElementById('status').textContent='카카오맵 SDK 로드 실패'">
+    </script>
+</body>
+</html>
