@@ -1,0 +1,33 @@
+/* 디자인 토큰: 네이비·블루·화이트. 색과 간격은 여기 값만 가져다 쓴다. */
+:root {
+  /* 색 */
+  --color-navy-900: #0b1f3a;
+  --color-navy-700: #14305a;
+  --color-blue-500: #1e6fd9 ;
+  --color-blue-400: #4a90e8;
+  --color-blue-100: #e6f0fc;
+  --color-white: #ffffff;
+  --color-gray-100: #f4f6f9;
+  --color-gray-500: #6b7686;
+  --color-gray-900: #1a2230;
+
+  /* 간격 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* 모서리·그림자 */
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --shadow-card: 0 4px 16px rgba(11, 31, 58, 0.12);
+
+  /* 글자 */
+  --font-base: 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+
+  /* 화면 최대 너비 */
+  --content-max: 1100px;
+}
