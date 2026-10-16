@@ -2,12 +2,12 @@
 import asyncio
 import time
 
-from app.config import (
+from app.core.config import (
     CACHE_SECONDS,
     MAX_CONCURRENT_REQUESTS,
 )
-from app.grid import to_grid
-from app.weather import get_weather_data
+from app.services.grid import to_grid
+from app.services.weather import get_weather_data
 
 _weather_cache = {}
 _pending_tasks = {}

@@ -6,14 +6,14 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from app.config import KAKAO_API_KEY, MAX_GRID_COUNT
-from app.grid import to_grid
+from app.core.config import KAKAO_API_KEY, MAX_GRID_COUNT
+from app.services.grid import to_grid
 
 # 아래 2개 함수는 기존 프로젝트의 실제 함수명에 맞춰 연결하세요.
 # get_cached_weather(lat, lon): 캐시를 이용한 비동기 날씨 조회
 # calculate_risk(weather): 위험도 계산
-from app.cache import get_cached_weather
-from app.risk import calculate_risk
+from app.services.cache import get_cached_weather
+from app.services.risk import calculate_risk
 
 
 router = APIRouter()

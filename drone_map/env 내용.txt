@@ -1,6 +1,0 @@
-# 카카오 맵 javascript 키 (화면에 생성)
-KAKAO_MAP_API_KEY
-# 카카오 맵 rest api 키 
-KAKAO_MAP_REST_API_KEY
-#기상청 인증키 
-KMA_SERVICE_KEY
