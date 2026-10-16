@@ -143,7 +143,8 @@ function drawMapGrids(
             };
 
             const risk = getCellRisk(cell, zones);
-            const airspace = typeof getCellAirspace === "function" ? getCellAirspace(cell) : null;
+            const airspaces = typeof getCellAirspaces === "function" ? getCellAirspaces(cell) : [];
+            const airspace = airspaces[0] || null;
 
             const rectangle = new kakao.maps.Rectangle({
                 bounds: new kakao.maps.LatLngBounds(
@@ -162,7 +163,11 @@ function drawMapGrids(
                 fillColor:
                     (airspace ? AIRSPACE_COLORS[airspace.type] : GRID_RISK_COLORS[risk.level]) ||
                     "#ffffff",
-                fillOpacity: airspace || risk.level > 0 ? 0.5 : 0
+                fillOpacity: airspace
+                    ? (map.getLevel() >= 10
+                        ? (airspace.type === "prohibited" ? 0.55 : 0.23)
+                        : (airspace.type === "prohibited" ? 0.8 : 0.45))
+                    : (risk.level > 0 ? 0.5 : 0)
             });
 
             rectangle.setMap(map);
@@ -175,7 +180,7 @@ function drawMapGrids(
                         const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
                         const props = airspace?.properties || {};
                         const name = props.name || props.NAME || props.designator || props.identifier || props.id || "공역";
-                        const airspaceHtml = airspace ? `<div style="padding:8px"><strong>${airspace.type === "prohibited" ? "비행금지구역" : "비행제한구역"}</strong><div>${escapeHtml(name)}</div></div>` : "";
+                        const airspaceHtml = airspaces.length ? `<div style="padding:8px;max-height:180px;overflow:auto"><strong>겹치는 공역 ${airspaces.length}개 (격자 근사 표시)</strong>${airspaces.slice(0,15).map(item => `<div style="margin-top:5px">${escapeHtml(item.type === 'prohibited' ? '비행금지공역' : '비행제한·기타 공역')} · ${escapeHtml(item.category)} · ${escapeHtml(item.properties?.name || '이름 없음')}</div>`).join('')}${airspaces.length>15 ? `<div>외 ${airspaces.length-15}개</div>` : ''}</div>` : "";
                         const weatherHtml = risk.zone ? createWeatherInfo(risk.zone.weather, risk.zone.risk) : "";
                         infoWindow.setContent(airspaceHtml + weatherHtml);
 

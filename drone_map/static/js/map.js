@@ -73,6 +73,11 @@ function initMap() {
         }
 
 
+        for (const [id, type] of [['show-prohibited', 'prohibited'], ['show-restricted', 'restricted']]) {
+            const checkbox = document.getElementById(id);
+            if (checkbox) checkbox.addEventListener('change', () => setAirspaceVisibility(type, checkbox.checked));
+        }
+
         // ========================================
         // 4. 햄버거 메뉴
         // ========================================

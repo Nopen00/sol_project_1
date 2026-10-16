@@ -14,6 +14,10 @@
         rel="stylesheet"
         href="/static/css/style.css"
     >
+    <style>
+        /* 비행금지구역 범례 색상을 공역 격자와 일치시킴 */
+        .legend-item .dot.no-fly { background-color: #000000 !important; }
+    </style>
 </head>
 
 <body>
@@ -56,9 +60,14 @@
 
     <div class="legend-item">
         <span class="dot restricted"></span>
-        <span>비행제한구역</span>
+        <span>비행제한·관제권</span>
     </div>
 
+    <div style="margin-top:10px">
+      <label style="display:block"><input type="checkbox" id="show-prohibited" checked> 비행금지공역 표시</label>
+      <label style="display:block"><input type="checkbox" id="show-restricted" checked> 비행제한·관제권 표시</label>
+    </div>
+    <p style="font-size:11px;line-height:1.4">비행금지공역(P), 비행제한공역(R), 관제권이 격자에 일부만 겹쳐도 전체 칸에 표시됩니다. 실제 비행 가능 여부와 최신 공역 정보는 공식 기관에서 확인하세요.</p>
     <hr>
 
     <h4>지역 선택</h4>
@@ -80,10 +89,10 @@
 
 
     <script src="/static/js/weather.js"></script>
-    <script src="/static/js/grid-map.js"></script>
+    <script src="/static/js/grid-map.js?v=20261016-core"></script>
     <script src="/static/js/risk-map.js"></script>
-    <script src="/static/js/airspace-map.js"></script>
-    <script src="/static/js/map.js"></script>
+    <script src="/static/js/airspace-map.js?v=20261016-core"></script>
+    <script src="/static/js/map.js?v=20261016-core"></script>
     <script
         src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_api_key }}&autoload=false"
         onload="initMap()"
