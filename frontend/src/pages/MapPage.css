@@ -1,0 +1,27 @@
+.map-box {
+  height: 70vh;
+  background: var(--color-gray-100);
+  position: relative;
+}
+
+.layer-toggle {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  display: grid;
+  gap: 5px;
+}
+
+.layer-btn {
+  border-radius: 5px;
+
+  background-color: var(--color-white);
+  cursor: pointer;
+  /* opacity: 0.5; */
+  z-index: 4;
+}
+
+.layer-btn--on {
+  background-color: var(--color-blue-400);
+  /* opacity: 1; */
+}

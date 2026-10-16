@@ -4,19 +4,19 @@ import "./Main.css";
 
 const FEATURES = [
   {
-    to: "/map",
+    to: "/map/restricted",
     icon: "🗺️",
     title: "드론 비행 지도",
     desc: "비행금지·제한 공역을 지도에서 확인해요.",
   },
   {
-    to: "/weather",
+    to: "/map/weather",
     icon: "🌤️",
     title: "기상 분석",
     desc: "풍속·강수·기온 등 날씨를 조회해요.",
   },
   {
-    to: "/suitability",
+    to: "/map/suitability",
     icon: "📊",
     title: "비행 적합도",
     desc: "날씨와 기종으로 참고 점수를 받아요.",

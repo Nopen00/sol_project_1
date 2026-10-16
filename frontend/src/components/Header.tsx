@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
-import { useAuth } from '../features/auth/AuthContext';
-import './Header.css';
+import { useState } from "react";
+import { Link, NavLink } from "react-router-dom";
+import { useAuth } from "../features/auth/AuthContext";
+import "./Header.css";
 
 const MENUS = [
-  { to: '/map', label: '드론 비행 지도' },
-  { to: '/weather', label: '기상 분석' },
-  { to: '/suitability', label: '비행 적합도' },
-  { to: '/drone-info', label: '드론 정보' },
-  { to: '/news', label: '최신 정보·영상' },
+  { to: "/map/restricted", label: "드론 비행 지도" },
+  { to: "/map/weather", label: "기상 분석" },
+  { to: "/map/suitability", label: "비행 적합도" },
+  { to: "/drone-info", label: "드론 정보" },
+  { to: "/news", label: "최신 정보·영상" },
 ];
 
 export default function Header() {
@@ -34,7 +34,7 @@ export default function Header() {
           ☰
         </button>
 
-        <nav className={`header__nav ${isOpen ? 'header__nav--open' : ''}`}>
+        <nav className={`header__nav ${isOpen ? "header__nav--open" : ""}`}>
           <ul className="header__menu">
             {MENUS.map((menu) => (
               <li key={menu.to}>
@@ -66,7 +66,11 @@ export default function Header() {
                 <Link to="/login" onClick={closeMenu}>
                   로그인
                 </Link>
-                <Link to="/signup" className="header__signup" onClick={closeMenu}>
+                <Link
+                  to="/signup"
+                  className="header__signup"
+                  onClick={closeMenu}
+                >
                   회원가입
                 </Link>
               </>
