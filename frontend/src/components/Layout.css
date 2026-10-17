@@ -1,0 +1,16 @@
+.layout__main {
+  min-height: 70vh;
+}
+
+.layout__footer {
+  background: var(--color-navy-900);
+  color: var(--color-blue-100);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.layout__footer p {
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
