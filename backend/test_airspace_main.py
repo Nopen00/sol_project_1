@@ -8,7 +8,10 @@ app = FastAPI(title="드론 공역 API 테스트")
 # 카카오맵 테스트 페이지의 API 요청 허용
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5500"],
+    allow_origins=[
+    "http://localhost:5500",
+    "http://localhost:5173",
+],
     allow_credentials=False,
     allow_methods=["GET"],
     allow_headers=["*"],
