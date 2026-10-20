@@ -1,6 +1,10 @@
 import { Navigate, useParams } from "react-router-dom";
 import "./MapPage.css";
 import { useEffect, useRef, useState } from "react";
+import InfoBox from "../components/InfoBox";
+import DroneSelect from "../features/weather/DroneSelect";
+import { getDroneModels } from "../api/droneApi";
+import type { DroneModel } from "../types/drone";
 
 const MODES = ["restricted", "weather", "suitability"];
 const LAYERS = [
@@ -14,12 +18,24 @@ export function MapView({ mode }: { mode: string }) {
   const [activeLayers, setActiveLayers] = useState<string[]>(
     mode ? [mode] : [],
   );
+  const [drones, setDrones] = useState<DroneModel[]>([]);
+  const [selectedDroneId, setSelectedDroneId] = useState("");
 
   const [airspaceResult, setAirspaceResult] = useState<{
     status: string;
     message: string;
     airspace_count: number;
   } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+
+    getDroneModels().then((models) => {
+      if (!cancelled) setDrones(models);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 가장 최근에 클릭한 요청 번호를 저장
   const [airspaceError, setAirspaceError] = useState<string | null>(null);
@@ -40,7 +56,6 @@ export function MapView({ mode }: { mode: string }) {
     }
   };
 
-
   useEffect(() => {
     const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
 
@@ -51,8 +66,7 @@ export function MapView({ mode }: { mode: string }) {
 
     const script = document.createElement("script");
 
-    script.src =
-      `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(kakaoKey)}&autoload=false`;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(kakaoKey)}&autoload=false`;
 
     script.onload = () => {
       const kakao = (window as any).kakao;
@@ -63,15 +77,13 @@ export function MapView({ mode }: { mode: string }) {
         if (!container) return;
 
         const options = {
-          center: new kakao.maps.LatLng(37.5665, 126.9780),
+          center: new kakao.maps.LatLng(37.5665, 126.978),
           level: 7,
         };
 
         const map = new kakao.maps.Map(container, options);
 
         kakao.maps.event.addListener(map, "click", (mouseEvent: any) => {
-
-
           const requestId = ++analysisRequestId.current;
           setAirspaceResult(null);
           setAirspaceError(null);
@@ -94,7 +106,7 @@ export function MapView({ mode }: { mode: string }) {
           console.log("경도:", longitude);
 
           fetch(
-            `http://127.0.0.1:8000/airspace/analysis?longitude=${longitude}&latitude=${latitude}`
+            `http://127.0.0.1:8000/airspace/analysis?longitude=${longitude}&latitude=${latitude}`,
           )
             .then((response) => {
               if (!response.ok) {
@@ -114,12 +126,12 @@ export function MapView({ mode }: { mode: string }) {
 
               console.error("공역 분석 실패:", error);
               setAirspaceError(
-                "공역 분석에 실패했습니다. 잠시 후 다시 시도해 주세요."
+                "공역 분석에 실패했습니다. 잠시 후 다시 시도해 주세요.",
               );
             });
 
           fetch(
-            `http://127.0.0.1:8000/airspace?longitude=${longitude}&latitude=${latitude}`
+            `http://127.0.0.1:8000/airspace?longitude=${longitude}&latitude=${latitude}`,
           )
             .then((response) => {
               if (!response.ok) {
@@ -140,67 +152,66 @@ export function MapView({ mode }: { mode: string }) {
                 console.log("좌표:", feature.geometry.coordinates);
 
                 if (feature.geometry.type === "MultiPolygon") {
-                  feature.geometry.coordinates.forEach((polygon: number[][][]) => {
-                    const paths = polygon.map((ring: number[][]) =>
-                      ring.map(
-                        (coordinate: number[]) =>
-                          new kakao.maps.LatLng(coordinate[1], coordinate[0])
-                      )
-                    );
+                  feature.geometry.coordinates.forEach(
+                    (polygon: number[][][]) => {
+                      const paths = polygon.map((ring: number[][]) =>
+                        ring.map(
+                          (coordinate: number[]) =>
+                            new kakao.maps.LatLng(coordinate[1], coordinate[0]),
+                        ),
+                      );
 
-                    const airspaceType = feature.properties.airspace_type;
+                      const airspaceType = feature.properties.airspace_type;
 
-                    const color = airspaceType === "P" ? "#FF0000" : "#FFA500";
+                      const color =
+                        airspaceType === "P" ? "#FF0000" : "#FFA500";
 
-                    const airspacePolygon = new kakao.maps.Polygon({
-                      map: map,
-                      path: paths,
-                      strokeWeight: 3,
-                      strokeColor: color,
-                      strokeOpacity: 0.9,
-                      fillColor: color,
-                      fillOpacity: 0.25,
-                      clickable: true,
-                    });
+                      const airspacePolygon = new kakao.maps.Polygon({
+                        map: map,
+                        path: paths,
+                        strokeWeight: 3,
+                        strokeColor: color,
+                        strokeOpacity: 0.9,
+                        fillColor: color,
+                        fillOpacity: 0.25,
+                        clickable: true,
+                      });
 
-                    polygonsRef.current.push(airspacePolygon);
+                      polygonsRef.current.push(airspacePolygon);
 
-                    kakao.maps.event.addListener(
-                      airspacePolygon,
-                      "click",
-                      (mouseEvent: any) => {
+                      kakao.maps.event.addListener(
+                        airspacePolygon,
+                        "click",
+                        (mouseEvent: any) => {
+                          if (infoWindowRef.current) {
+                            infoWindowRef.current.close();
+                            infoWindowRef.current = null;
+                          }
 
+                          const properties = feature.properties;
 
-                        if (infoWindowRef.current) {
-                          infoWindowRef.current.close();
-                          infoWindowRef.current = null;
-                        }
+                          console.log("선택한 공역 정보:", properties);
 
-                        const properties = feature.properties;
+                          const isRestricted = airspaceType === "R";
 
-                        console.log("선택한 공역 정보:", properties);
+                          const airspaceName = isRestricted
+                            ? properties.res_lbl_1
+                            : properties.prh_lbl_1;
 
+                          const upperAltitude = isRestricted
+                            ? properties.res_lbl_2
+                            : properties.prh_lbl_2;
 
-                        const isRestricted = airspaceType === "R";
+                          const lowerAltitude = isRestricted
+                            ? properties.res_lbl_3
+                            : properties.prh_lbl_3;
 
-                        const airspaceName = isRestricted
-                          ? properties.res_lbl_1
-                          : properties.prh_lbl_1;
+                          const airspaceDescription = isRestricted
+                            ? "비행제한구역"
+                            : (properties.prh_lbl_4 ?? "비행금지구역");
 
-                        const upperAltitude = isRestricted
-                          ? properties.res_lbl_2
-                          : properties.prh_lbl_2;
-
-                        const lowerAltitude = isRestricted
-                          ? properties.res_lbl_3
-                          : properties.prh_lbl_3;
-
-                        const airspaceDescription = isRestricted
-                          ? "비행제한구역"
-                          : properties.prh_lbl_4 ?? "비행금지구역";
-
-                        const infoWindow = new kakao.maps.InfoWindow({
-                          content: `
+                          const infoWindow = new kakao.maps.InfoWindow({
+                            content: `
     <div style="padding:12px;min-width:220px;">
       <strong>${airspaceType === "P" ? "비행금지구역" : "비행제한구역"}</strong>
       <p>구역명: ${airspaceName ?? "정보 없음"}</p>
@@ -209,14 +220,15 @@ export function MapView({ mode }: { mode: string }) {
       <p>구역 설명: ${airspaceDescription}</p>
     </div>
   `,
-                        });
+                          });
 
-                        infoWindow.setPosition(mouseEvent.latLng);
-                        infoWindow.open(map);
-                        infoWindowRef.current = infoWindow;
-                      }
-                    );
-                  });
+                          infoWindow.setPosition(mouseEvent.latLng);
+                          infoWindow.open(map);
+                          infoWindowRef.current = infoWindow;
+                        },
+                      );
+                    },
+                  );
                 }
               });
             })
@@ -225,7 +237,7 @@ export function MapView({ mode }: { mode: string }) {
 
               console.error("공역 조회 실패:", error);
               setAirspaceError(
-                "공역 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+                "공역 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
               );
             });
         });
@@ -265,9 +277,27 @@ export function MapView({ mode }: { mode: string }) {
       setAirspaceError(null);
     }
   }, [activeLayers]);
+
   return (
     <section>
-      <h1>{mode} 지도</h1>
+      <div className="map-header">
+        <div className="info-panels">
+          {activeLayers.map((layerId) => {
+            const layer = LAYERS.find((item) => item.id === layerId);
+            return (
+              <InfoBox key={layerId} title={layer ? layer.label : layerId}>
+                임시내용
+              </InfoBox>
+            );
+          })}
+        </div>
+        <DroneSelect
+          options={drones}
+          value={selectedDroneId}
+          onChange={setSelectedDroneId}
+        />
+      </div>
+      {/* <p>선택한 기종 : {selectedDroneId}</p> */}
 
       <div className="map-box">
         <div className="layer-toggle">
@@ -288,18 +318,10 @@ export function MapView({ mode }: { mode: string }) {
             </button>
           ))}
         </div>
-        <div
-          id="kakao-map"
-          style={{ width: "100%", height: "500px" }}
-        />
+        <div id="kakao-map" style={{ width: "100%", height: "100%" }} />
       </div>
-      <p>켜진 레이어: {activeLayers.join(", ")}</p>
 
-      {airspaceError && (
-        <p style={{ color: "red" }}>
-          ⚠️ {airspaceError}
-        </p>
-      )}
+      {airspaceError && <p style={{ color: "red" }}>⚠️ {airspaceError}</p>}
 
       {airspaceResult && (
         <div>
@@ -314,8 +336,8 @@ export function MapView({ mode }: { mode: string }) {
           <p>{airspaceResult.message}</p>
           <p>조회된 공역: {airspaceResult.airspace_count}개</p>
           <small>
-            이 결과는 P/R 공역 기준 참고 정보이며,
-            실제 비행 가능 여부와 승인 요건은 별도로 확인해야 합니다.
+            이 결과는 P/R 공역 기준 참고 정보이며, 실제 비행 가능 여부와 승인
+            요건은 별도로 확인해야 합니다.
           </small>
         </div>
       )}

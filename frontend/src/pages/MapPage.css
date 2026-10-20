@@ -10,6 +10,7 @@
   top: 10px;
   display: grid;
   gap: 5px;
+  z-index: 10;
 }
 
 .layer-btn {
@@ -18,10 +19,21 @@
   background-color: var(--color-white);
   cursor: pointer;
   /* opacity: 0.5; */
-  z-index: 4;
 }
 
 .layer-btn--on {
   background-color: var(--color-blue-400);
   /* opacity: 1; */
+}
+
+.map-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-height: 100px;
+  justify-content: space-between;
+}
+.info-panels {
+  display: flex;
+  gap: var(--space-3);
 }
