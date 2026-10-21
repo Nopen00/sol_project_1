@@ -237,11 +237,15 @@ def make_records(grids, base, slot):
 
 
 def engine_for(env):
-    if (
-        env.get("DB_USER", "").upper() != "DRONE_APP"
-        or env.get("DB_HOST") not in ("localhost", "127.0.0.1")
-    ):
-        raise RuntimeError("로컬 DRONE_APP DB만 허용합니다.")
+    """설정된 Oracle 계정으로 DB 연결."""
+
+    required = (
+        "DB_HOST", "DB_PORT", "DB_SERVICE",
+        "DB_USER", "DB_PASSWORD",
+    )
+    missing = [key for key in required if not env.get(key)]
+    if missing:
+        raise RuntimeError("DB 설정 누락: " + ", ".join(missing))
 
     url = URL.create(
         "oracle+oracledb",
@@ -252,29 +256,14 @@ def engine_for(env):
         query={"service_name": env["DB_SERVICE"]},
     )
 
-    engine = create_engine(url)
+    engine = create_engine(url, pool_pre_ping=True)
 
-    with engine.connect() as conn:
-        user = conn.execute(
-            text("SELECT USER FROM DUAL")
-        ).scalar_one()
-
-        if str(user).upper() != "DRONE_APP":
-            raise RuntimeError("Oracle 계정 확인 실패")
-
-        found = set(
-            conn.execute(
-                text("SELECT TABLE_NAME FROM USER_TABLES")
-            ).scalars()
-        )
-
-        required = {
-            "WEATHER_NATIONAL_FORECAST_V2",
-            "WEATHER_COLLECTION_RUNS_V2",
-        }
-
-        if not required.issubset(found):
-            raise RuntimeError("필요한 Oracle 테이블이 없습니다.")
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1 FROM DUAL"))
+    except Exception:
+        engine.dispose()
+        raise
 
     return engine
 
