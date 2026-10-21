@@ -4,7 +4,7 @@ const NAV_ITEMS = [
   { to: "/", label: "메인" },
   { to: "/map/restricted", label: "비행제한 지도" },
   { to: "/map/weather", label: "날씨 지도" },
-  { to: "/map/suitability", label: "적합도 지도" },
+  { to: "/map/suitability", label: "비행 적합도 지도" },
   { to: "/drone-info", label: "드론 정보" },
 ];
 
