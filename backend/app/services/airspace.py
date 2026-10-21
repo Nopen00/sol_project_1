@@ -1,5 +1,11 @@
 import os
 import requests
+from pathlib import Path
+from dotenv import load_dotenv
+
+# backend/.env 파일 불러오기
+env_path = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(env_path)
 
 # VWorld API 주소
 VWORLD_URL = "https://api.vworld.kr/req/data"
