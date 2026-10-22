@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>드론 공역 지도 테스트</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        h3 {
+            padding: 0 16px;
+        }
+
+        #map {
+            width: 100%;
+            height: 85vh;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>드론 공역 지도 테스트</h3>
+
+    <div id="map"></div>
+
+    <script>
+        const KAKAO_KEY = "YOUR_KAKAO_JAVASCRIPT_KEY";
+
+        const script = document.createElement("script");
+        script.src =
+            "https://dapi.kakao.com/v2/maps/sdk.js?appkey=" +
+            encodeURIComponent(KAKAO_KEY) +
+            "&autoload=false";
+
+        script.onload = function () {
+            kakao.maps.load(function () {
+                const container = document.getElementById("map");
+
+                const options = {
+                    center: new kakao.maps.LatLng(
+                        35.323135956891576,
+                        129.3019358189357
+                    ),
+                    level: 7
+                };
+
+                const map = new kakao.maps.Map(container, options);
+
+
+                // 지도에 표시한 공역 영역 보관
+                let airspacePolygons = [];
+                let airspaceInfoWindow = null;
+
+                // 기존에 표시한 공역 지우기
+                function clearAirspace() {
+                    airspacePolygons.forEach((polygon) => {
+                        polygon.setMap(null);
+                    });
+                    airspacePolygons = [];
+                }
+
+                // 지도에서 클릭한 위치의 공역 조회
+                kakao.maps.event.addListener(map, "click", async function (mouseEvent) {
+                    const latitude = mouseEvent.latLng.getLat();
+                    const longitude = mouseEvent.latLng.getLng();
+
+                    console.log("선택한 위치:", latitude, longitude);
+
+                    clearAirspace();
+
+                    try {
+                        const url =
+                            `http://127.0.0.1:8000/airspace?longitude=${longitude}&latitude=${latitude}`;
+
+                        const response = await fetch(url);
+
+                        if (!response.ok) {
+                            throw new Error(`API 오류: ${response.status}`);
+                        }
+
+                        const geojson = await response.json();
+
+                        console.log("공역 조회 결과:", geojson);
+
+                        for (const feature of geojson.features) {
+                            const airspaceType = feature.properties?.airspace_type;
+                            const geometry = feature.geometry;
+
+                            if (!geometry) continue;
+
+                            const color = airspaceType === "P"
+                                ? "#ff0000"
+                                : "#ff9900";
+
+                            // GeoJSON Polygon / MultiPolygon 처리
+                            const polygons = geometry.type === "Polygon"
+                                ? [geometry.coordinates]
+                                : geometry.type === "MultiPolygon"
+                                    ? geometry.coordinates
+                                    : [];
+
+                            for (const polygonCoordinates of polygons) {
+                                // 첫 번째 링은 외곽 경계
+
+                                const path = polygonCoordinates.map((ring) => {
+                                    return ring.map(([lng, lat]) => {
+                                        return new kakao.maps.LatLng(lat, lng);
+                                    });
+                                });
+
+                                const polygon = new kakao.maps.Polygon({
+                                    map: map,
+                                    path: path,
+                                    strokeWeight: 3,
+                                    strokeColor: color,
+                                    strokeOpacity: 0.9,
+                                    fillColor: color,
+                                    fillOpacity: 0.2
+                                });
+
+
+                                // 공역을 클릭하면 상세 정보 표시
+                                kakao.maps.event.addListener(polygon, "click", function (mouseEvent) {
+                                    const properties = feature.properties || {};
+
+
+
+                                    const name = airspaceType === "P"
+                                        ? properties.prh_lbl_1
+                                        : properties.res_lbl_1;
+
+                                    const lowerAltitude = airspaceType === "P"
+                                        ? properties.prh_lbl_3
+                                        : properties.res_lbl_3;
+
+                                    const upperAltitude = airspaceType === "P"
+                                        ? properties.prh_lbl_2
+                                        : properties.res_lbl_2;
+
+
+
+                                    const typeName = airspaceType === "P"
+                                        ? "비행금지구역(P)"
+                                        : "비행제한구역(R)";
+
+                                    const content = `
+    <div style="padding:15px; min-width:230px;">
+        <strong>공역 상세 정보</strong>
+        <hr>
+        <p>공역 이름: ${name}</p>
+        <p>공역 종류: ${typeName}</p>
+        <p>하한 고도: ${lowerAltitude}</p>
+        <p>상한 고도: ${upperAltitude}</p>
+    </div>
+`;
+
+                                    if (airspaceInfoWindow) {
+                                        airspaceInfoWindow.close();
+                                    }
+
+                                    airspaceInfoWindow = new kakao.maps.InfoWindow({
+                                        content: content,
+                                        removable: true,
+                                        position: mouseEvent.latLng
+                                    });
+
+
+                                    airspaceInfoWindow.open(map);
+
+                                }); // 공역 클릭 이벤트 종료
+
+                                airspacePolygons.push(polygon);
+
+                            }
+                        }
+
+                        if (geojson.features.length === 0) {
+                            alert("해당 위치에서 조회된 P/R 공역이 없습니다.");
+                        }
+
+                    } catch (error) {
+                        console.error("공역 조회 실패:", error);
+                        alert("공역 정보를 가져오지 못했습니다.");
+                    }
+                });
+
+            });
+        };
+
+        document.head.appendChild(script);
+    </script>
+</body>
+
+</html>
