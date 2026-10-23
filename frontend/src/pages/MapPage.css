@@ -38,12 +38,12 @@
   border: 0;
   border-radius: var(--radius-md);
   background: white;
-  color: #172b4d;
+  color: var(--color-map-text);
   font-size: 15px;
 }
 
 .main-search select:disabled {
-  background: #e5e7eb;
+  background: var(--color-map-disabled);
 }
 
 .main-search button:disabled {
@@ -74,14 +74,14 @@
 
 .main-result-card {
   padding: 24px;
-  border: 1px solid #dbe5f0;
+  border: 1px solid var(--color-card-border);
   border-radius: 16px;
-  background: #f5f9ff;
+  background: var(--color-card-background);
 }
 
 .main-result-card h3 {
   margin-top: 0;
-  color: #102c54;
+  color: var(--color-card-title);
 }
 
 .main-result-card p {
@@ -92,12 +92,12 @@
   margin-top: 20px;
   font-size: 20px;
   font-weight: 700;
-  color: #126e43;
+  color: var(--color-status-positive);
 }
 
 .main-results__notice {
   margin-top: 14px;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 
@@ -110,3 +110,15 @@
     grid-template-columns: 1fr;
   }
 }
+/* 비행 적합도 상태 색상은 공통 디자인 토큰에서 관리 */
+.analysis-panel { padding: 20px; border: 1px solid var(--color-analysis-panel-border); }
+.analysis-result { margin-top: 20px; }
+.analysis-explanation { font-size: 14px; color: var(--color-analysis-explanation); }
+.analysis-error, .airspace-error { color: var(--color-analysis-danger); }
+.analysis-status--good { color: var(--color-analysis-good); }
+.analysis-status--caution { color: var(--color-analysis-caution); }
+.analysis-status--not-recommended { color: var(--color-analysis-danger); }
+.analysis-status--unknown { color: var(--color-analysis-unknown); }
+.analysis-final { font-weight: bold; }
+
+.map-weather-panel { padding: 20px; border: 1px solid var(--color-analysis-panel-border); border-radius: 8px; margin: 16px 0; }

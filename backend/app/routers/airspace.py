@@ -1,3 +1,7 @@
+import logging
+from app.services.airspace import AirspaceUpstreamError
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, HTTPException, Query
 from app.services.airspace_analysis import analyze_airspace
 
@@ -15,7 +19,7 @@ def read_airspace(
         result = get_airspace(longitude, latitude)
         return result
 
-    except Exception:
+    except AirspaceUpstreamError:
         raise HTTPException(
             status_code=502,
             detail="공역 정보를 조회하는 중 오류가 발생했습니다.",
@@ -36,7 +40,7 @@ def read_airspace_analysis(
         # 3. 분석 결과 반환
         return result
 
-    except Exception:
+    except AirspaceUpstreamError:
         raise HTTPException(
             status_code=502,
             detail="공역 분석 중 오류가 발생했습니다."

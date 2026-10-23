@@ -1,3 +1,4 @@
+from app.schemas.flight_analysis import FlightAnalysisResponse
 from fastapi import APIRouter, HTTPException
 
 from app.services.flight_analysis import analyze_flight
@@ -6,7 +7,7 @@ from app.services.weather_grid import latlon_to_grid
 router = APIRouter()
 
 
-@router.get("/flight-analysis")
+@router.get("/flight-analysis", response_model=FlightAnalysisResponse)
 def get_flight_analysis(
     model_id: str,
     nx: int | None = None,

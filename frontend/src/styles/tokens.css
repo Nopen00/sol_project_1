@@ -11,6 +11,22 @@
   --color-gray-500: #6b7686;
   --color-gray-900: #1a2230;
 
+
+  /* 기존 화면 색상을 유지하기 위한 의미 기반 토큰 */
+  --color-map-text: #172b4d;
+  --color-map-disabled: #e5e7eb;
+  --color-card-border: #dbe5f0;
+  --color-card-background: #f5f9ff;
+  --color-card-title: #102c54;
+  --color-status-positive: #126e43;
+  --color-text-muted: #64748b;
+  --color-analysis-good: #16a34a;
+  --color-analysis-caution: #f59e0b;
+  --color-analysis-danger: #dc2626;
+  --color-analysis-unknown: #6b7280;
+  --color-analysis-explanation: #666666;
+  --color-analysis-panel-border: #dddddd;
+
   /* 간격 */
   --space-1: 4px;
   --space-2: 8px;

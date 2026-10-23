@@ -62,8 +62,3 @@ def analyze_flight(model_id, nx, ny):
         "min_temp": drone["min_temp"],
         "max_temp": drone["max_temp"],
     }
-
-
-if __name__ == "__main__":
-    result = analyze_flight("AUTEL_EVO_LITE", 60, 127)
-    print(result)

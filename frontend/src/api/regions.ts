@@ -1,3 +1,4 @@
+import { getJson } from "./client";
 export interface Region {
   name: string;
   province: string;
@@ -16,11 +17,5 @@ export interface RegionData {
 }
 
 export async function fetchRegions(): Promise<RegionData> {
-  const response = await fetch("http://127.0.0.1:8001/regions");
-
-  if (!response.ok) {
-    throw new Error(`지역 목록 조회 실패: ${response.status}`);
-  }
-
-  return response.json();
+  return getJson<RegionData>("/regions");
 }

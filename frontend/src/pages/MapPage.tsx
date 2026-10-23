@@ -1,6 +1,9 @@
 import { Navigate, useParams } from "react-router-dom";
 import "./MapPage.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchDrones, fetchFlightAnalysis } from "../api/map";
+import { useKakaoMap } from "../features/map/useKakaoMap";
+import type { DroneOption, FlightAnalysisResult } from "../types/map";
 
 const MODES = ["restricted", "weather", "suitability"];
 const LAYERS = [
@@ -11,12 +14,10 @@ const LAYERS = [
 ];
 
 export function MapView({ mode }: { mode: string }) {
-  const [drones, setDrones] = useState<
-    { id: string; name: string }[]
-  >([]);
+  const [drones, setDrones] = useState<DroneOption[]>([]);
 
   const [selectedDrone, setSelectedDrone] = useState("");
-  const [flightResult, setFlightResult] = useState<any>(null);
+  const [flightResult, setFlightResult] = useState<FlightAnalysisResult | null>(null);
   const [flightLoading, setFlightLoading] = useState(false);
   const [flightError, setFlightError] = useState("");
   
@@ -35,344 +36,30 @@ export function MapView({ mode }: { mode: string }) {
   return mode ? [mode] : [];
 });
 
-  const [selectedLocation, setSelectedLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-
-  const [airspaceResult, setAirspaceResult] = useState<{
-    status: string;
-    message: string;
-    airspace_count: number;
-  } | null>(null);
-
-  // 가장 최근에 클릭한 요청 번호를 저장
-  const [airspaceError, setAirspaceError] = useState<string | null>(null);
-  const analysisRequestId = useRef(0);
-  const polygonsRef = useRef<any[]>([]);
-  const infoWindowRef = useRef<any>(null);
-  const activeLayersRef = useRef(activeLayers);
-
-  useEffect(() => {
-    activeLayersRef.current = activeLayers;
-  }, [activeLayers]);
+  const { selectedLocation, airspaceResult, airspaceError, weatherResult, weatherError, weatherLoading } = useKakaoMap(activeLayers);
 
   const toggleLayer = (id: string) => {
-    if (activeLayers.includes(id)) {
-      setActiveLayers(activeLayers.filter((layerId) => layerId !== id)); // 빼기: 그 id만 빠진 새 배열
-    } else {
-      setActiveLayers([...activeLayers, id]); // 넣기: 기존 + 그 id 가 있는 새 배열
-    }
+    setActiveLayers((previous) => previous.includes(id)
+      ? previous.filter((layerId) => layerId !== id)
+      : [...previous, id]);
   };
 
-
   useEffect(() => {
-    const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
-
-    if (!kakaoKey) {
-      console.error("카카오맵 API 키가 없습니다.");
-      return;
-    }
-
-    const script = document.createElement("script");
-
-    script.src =
-      `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(kakaoKey)}&autoload=false`;
-
-    script.onload = () => {
-      const kakao = (window as any).kakao;
-
-      kakao.maps.load(() => {
-        const container = document.getElementById("kakao-map");
-
-        if (!container) return;
-
-       
-        // 메인 페이지에서 전달한 지역 좌표 읽기
-          const params = new URLSearchParams(window.location.search);
-
-          const latParam = params.get("lat");
-          const lngParam = params.get("lng");
-          const levelParam = params.get("level");
-
-          // 기본 지도 위치: 서울
-          let latitude = 37.5665;
-          let longitude = 126.9780;
-          let level = 7;
-
-          // URL에 좌표가 있다면 해당 위치 사용
-          if (latParam !== null && lngParam !== null) {
-            const lat = Number(latParam);
-            const lng = Number(lngParam);
-            const zoom = levelParam === null ? 6 : Number(levelParam);
-
-            if (
-              Number.isFinite(lat) &&
-              Number.isFinite(lng) &&
-              lat >= 33 &&
-              lat <= 39 &&
-              lng >= 124 &&
-              lng <= 132
-            ) {
-              latitude = lat;
-              longitude = lng;
-
-              if (
-                Number.isFinite(zoom) &&
-                zoom >= 1 &&
-                zoom <= 14
-              ) {
-                level = zoom;
-              }
-            }
-          }
-
-          // 전달받은 좌표로 카카오맵 생성
-          const options = {
-            center: new kakao.maps.LatLng(latitude, longitude),
-            level,
-          };
-
-          const map = new kakao.maps.Map(container, options);
-
-          console.log("지도 초기 위치:", {
-            latitude,
-            longitude,
-            level,
-          });
-
-
-        kakao.maps.event.addListener(map, "click", (mouseEvent: any) => {
-
-
-          const requestId = ++analysisRequestId.current;
-          setAirspaceResult(null);
-          setAirspaceError(null);
-          polygonsRef.current.forEach((polygon) => {
-            polygon.setMap(null);
-          });
-
-          polygonsRef.current = [];
-
-          if (
-            !activeLayersRef.current.includes("restricted") &&
-            !activeLayersRef.current.includes("suitability")
-          ) {
-            return;
-          }
-          const latlng = mouseEvent.latLng;
-
-          const latitude = latlng.getLat();
-          const longitude = latlng.getLng();
-          setSelectedLocation({ latitude, longitude });
-
-          if (!activeLayersRef.current.includes("restricted")) {
-            return;
-          }
-
-          console.log("클릭한 위치");
-          console.log("위도:", latitude);
-          console.log("경도:", longitude);
-
-          fetch(
-            `http://127.0.0.1:8001/airspace/analysis?longitude=${longitude}&latitude=${latitude}`
-          )
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error(`HTTP 오류: ${response.status}`);
-              }
-
-              return response.json();
-            })
-            .then((data) => {
-              if (requestId !== analysisRequestId.current) return;
-
-              console.log("공역 분석 결과:", data);
-              setAirspaceResult(data);
-            })
-            .catch((error) => {
-              if (requestId !== analysisRequestId.current) return;
-
-              console.error("공역 분석 실패:", error);
-              setAirspaceError(
-                "공역 분석에 실패했습니다. 잠시 후 다시 시도해 주세요."
-              );
-            });
-
-          fetch(
-            `http://127.0.0.1:8001/airspace?longitude=${longitude}&latitude=${latitude}`
-          )
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error(`HTTP 오류: ${response.status}`);
-              }
-              return response.json();
-            })
-            .then((data) => {
-              if (requestId !== analysisRequestId.current) return;
-
-              console.log("공역 조회 결과:", data);
-              console.log("공역 개수:", data.features.length);
-
-              data.features.forEach((feature: any) => {
-                console.log("공역 종류:", feature.properties.airspace_type);
-                console.log("공역 이름:", feature.properties);
-                console.log("도형 종류:", feature.geometry.type);
-                console.log("좌표:", feature.geometry.coordinates);
-
-                if (feature.geometry.type === "MultiPolygon") {
-                  feature.geometry.coordinates.forEach((polygon: number[][][]) => {
-                    const paths = polygon.map((ring: number[][]) =>
-                      ring.map(
-                        (coordinate: number[]) =>
-                          new kakao.maps.LatLng(coordinate[1], coordinate[0])
-                      )
-                    );
-
-                    const airspaceType = feature.properties.airspace_type;
-
-                    const color = airspaceType === "P" ? "#FF0000" : "#FFA500";
-
-                    const airspacePolygon = new kakao.maps.Polygon({
-                      map: map,
-                      path: paths,
-                      strokeWeight: 3,
-                      strokeColor: color,
-                      strokeOpacity: 0.9,
-                      fillColor: color,
-                      fillOpacity: 0.25,
-                      clickable: true,
-                    });
-
-                    polygonsRef.current.push(airspacePolygon);
-
-                    kakao.maps.event.addListener(
-                      airspacePolygon,
-                      "click",
-                      (mouseEvent: any) => {
-
-
-                        if (infoWindowRef.current) {
-                          infoWindowRef.current.close();
-                          infoWindowRef.current = null;
-                        }
-
-                        const properties = feature.properties;
-
-                        console.log("선택한 공역 정보:", properties);
-
-
-                        const isRestricted = airspaceType === "R";
-
-                        const airspaceName = isRestricted
-                          ? properties.res_lbl_1
-                          : properties.prh_lbl_1;
-
-                        const upperAltitude = isRestricted
-                          ? properties.res_lbl_2
-                          : properties.prh_lbl_2;
-
-                        const lowerAltitude = isRestricted
-                          ? properties.res_lbl_3
-                          : properties.prh_lbl_3;
-
-                        const airspaceDescription = isRestricted
-                          ? "비행제한구역"
-                          : properties.prh_lbl_4 ?? "비행금지구역";
-
-                        const infoWindow = new kakao.maps.InfoWindow({
-                          content: `
-    <div style="padding:12px;min-width:220px;">
-      <strong>${airspaceType === "P" ? "비행금지구역" : "비행제한구역"}</strong>
-      <p>구역명: ${airspaceName ?? "정보 없음"}</p>
-      <p>상한 고도: ${upperAltitude ?? "정보 없음"}</p>
-      <p>하한 고도: ${lowerAltitude ?? "정보 없음"}</p>
-      <p>구역 설명: ${airspaceDescription}</p>
-    </div>
-  `,
-                        });
-
-                        infoWindow.setPosition(mouseEvent.latLng);
-                        infoWindow.open(map);
-                        infoWindowRef.current = infoWindow;
-                      }
-                    );
-                  });
-                }
-              });
-            })
-            .catch((error) => {
-              if (requestId !== analysisRequestId.current) return;
-
-              console.error("공역 조회 실패:", error);
-              setAirspaceError(
-                "공역 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
-              );
-            });
-        });
-      });
-    };
-
-    script.onerror = () => {
-      console.error("카카오맵 SDK를 불러오지 못했습니다.");
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      script.remove();
-    };
-  }, []);
-  useEffect(() => {
-    if (!activeLayers.includes("restricted")) {
-      // 이전 API 요청의 응답 무시
-      analysisRequestId.current += 1;
-
-      // 지도에 그려진 공역 경계 제거
-      polygonsRef.current.forEach((polygon) => {
-        polygon.setMap(null);
-      });
-
-      polygonsRef.current = [];
-
-      // 열려 있는 정보창 닫기
-      if (infoWindowRef.current) {
-        infoWindowRef.current.close();
-        infoWindowRef.current = null;
-      }
-
-      // 분석 결과 제거
-      setAirspaceResult(null);
-      setAirspaceError(null);
-    }
-  }, [activeLayers]);
-
-  useEffect(() => {
-    fetch("http://127.0.0.1:8001/drones")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("드론 목록 조회 실패");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        setDrones(data);
-      })
-      .catch((error) => {
-        console.error("드론 목록 불러오기 실패:", error);
-      });
+    fetchDrones()
+      .then(setDrones)
+      .catch((error) => console.error("드론 목록 불러오기 실패:", error));
   }, []);
 
   function getResultInfo(status: string) {
     switch (status) {
       case "GOOD":
-        return { text: "양호", color: "#16a34a", icon: "🟢" };
+        return { text: "양호", className: "analysis-status--good", icon: "🟢" };
       case "CAUTION":
-        return { text: "주의", color: "#f59e0b", icon: "🟠" };
+        return { text: "주의", className: "analysis-status--caution", icon: "🟠" };
       case "NOT_RECOMMENDED":
-        return { text: "비행 비권장", color: "#dc2626", icon: "🔴" };
+        return { text: "비행 비권장", className: "analysis-status--not-recommended", icon: "🔴" };
       default:
-        return { text: "판단 불가", color: "#6b7280", icon: "⚪" };
+        return { text: "판단 불가", className: "analysis-status--unknown", icon: "⚪" };
     }
   }
 
@@ -391,15 +78,7 @@ export function MapView({ mode }: { mode: string }) {
     setFlightResult(null);
 
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8001/flight-analysis?model_id=${encodeURIComponent(selectedDrone)}&latitude=${selectedLocation.latitude}&longitude=${selectedLocation.longitude}`
-      );
-
-      if (!response.ok) {
-        throw new Error("분석 요청 실패");
-      }
-
-      const data = await response.json();
+      const data = await fetchFlightAnalysis(selectedDrone, selectedLocation.latitude, selectedLocation.longitude);
       setFlightResult(data);
     } catch (error) {
       console.error(error);
@@ -439,7 +118,7 @@ export function MapView({ mode }: { mode: string }) {
       </div>
       <p>켜진 레이어: {activeLayers.join(", ")}</p>
       {activeLayers.includes("suitability") && (
-        <div style={{ padding: "20px", border: "1px solid #ddd" }}>
+        <div className="analysis-panel">
           <h3>드론 비행 적합도 분석</h3>
 
           <label htmlFor="drone-select">드론 선택: </label>
@@ -475,10 +154,10 @@ export function MapView({ mode }: { mode: string }) {
             {flightLoading ? "분석 중..." : "비행 적합도 분석"}
           </button>
 
-          {flightError && <p style={{ color: "red" }}>{flightError}</p>}
+          {flightError && <p className="analysis-error">{flightError}</p>}
 
           {flightResult && (
-            <div style={{ marginTop: "20px" }}>
+            <div className="analysis-result">
               <h3>분석 결과</h3>
 
               <p>드론: {flightResult.drone}</p>
@@ -494,12 +173,12 @@ export function MapView({ mode }: { mode: string }) {
               </p>
               <p>
                 풍속 평가:{" "}
-                <span style={{ color: getResultInfo(flightResult.wind_result).color }}>
+                <span className={getResultInfo(flightResult.wind_result).className}>
                   {getResultInfo(flightResult.wind_result).icon}{" "}
                   {getResultInfo(flightResult.wind_result).text}
                 </span>
               </p>
-              <p style={{ fontSize: "14px", color: "#666" }}>
+              <p className="analysis-explanation">
                 {flightResult.wind_result === "GOOD"
                   ? "현재 풍속이 드론 풍속 기준의 50% 미만으로 양호합니다."
                   : flightResult.wind_result === "CAUTION"
@@ -511,12 +190,12 @@ export function MapView({ mode }: { mode: string }) {
 
               <p>
                 기온 평가:{" "}
-                <span style={{ color: getResultInfo(flightResult.temperature_result).color }}>
+                <span className={getResultInfo(flightResult.temperature_result).className}>
                   {getResultInfo(flightResult.temperature_result).icon}{" "}
                   {getResultInfo(flightResult.temperature_result).text}
                 </span>
               </p>
-              <p style={{ fontSize: "14px", color: "#666" }}>
+              <p className="analysis-explanation">
                 {flightResult.temperature_result === "GOOD"
                   ? "현재 기온이 드론의 작동 온도 범위 내에 있어 양호합니다."
                   : flightResult.temperature_result === "CAUTION"
@@ -528,12 +207,12 @@ export function MapView({ mode }: { mode: string }) {
 
               <p>
                 강수 평가:{" "}
-                <span style={{ color: getResultInfo(flightResult.precipitation_result).color }}>
+                <span className={getResultInfo(flightResult.precipitation_result).className}>
                   {getResultInfo(flightResult.precipitation_result).icon}{" "}
                   {getResultInfo(flightResult.precipitation_result).text}
                 </span>
               </p>
-              <p style={{ fontSize: "14px", color: "#666" }}>
+              <p className="analysis-explanation">
                 {flightResult.precipitation_result === "UNKNOWN"
                   ? "강수 데이터가 아직 검증되지 않아 비나 눈이 오는지 판단할 수 없습니다."
                   : flightResult.precipitation_result === "NOT_RECOMMENDED"
@@ -546,10 +225,7 @@ export function MapView({ mode }: { mode: string }) {
               <h2>
                 최종 결과:{" "}
                 <span
-                  style={{
-                    color: getResultInfo(flightResult.final_result).color,
-                    fontWeight: "bold",
-                  }}
+                  className={`${getResultInfo(flightResult.final_result).className} analysis-final`}
                 >
                   {getResultInfo(flightResult.final_result).icon}{" "}
                   {getResultInfo(flightResult.final_result).text}
@@ -565,8 +241,33 @@ export function MapView({ mode }: { mode: string }) {
         </div>
       )}
 
+      {activeLayers.includes("weather") && (
+        <section className="map-weather-panel" aria-live="polite">
+          <h3>선택 지역 날씨 정보</h3>
+          {selectedLocation && (
+            <p>조회 좌표: {selectedLocation.latitude.toFixed(4)}, {selectedLocation.longitude.toFixed(4)}</p>
+          )}
+          {!selectedLocation && <p>지도에서 위치를 클릭하거나 메인페이지에서 지역을 선택하세요.</p>}
+          {weatherLoading && <p>날씨 예보 조회 중...</p>}
+          {weatherError && <p className="analysis-error">{weatherError}</p>}
+          {selectedLocation && !weatherLoading && !weatherError && !weatherResult && (
+            <p>표시할 날씨 데이터가 없습니다. 백엔드 /weather/point 응답을 확인하세요.</p>
+          )}
+          {weatherResult && !weatherLoading && (
+            <div>
+              <p>예보 시간: {weatherResult.forecast_at ?? "정보 없음"}</p>
+              <p>기온: {weatherResult.temperature ?? "정보 없음"}°C</p>
+              <p>풍속: {weatherResult.wind_speed ?? "정보 없음"} m/s</p>
+              <p>강수: {weatherResult.precipitation ?? "정보 없음"}</p>
+              <p>강수 형태: {weatherResult.precipitation_type_status ?? weatherResult.precipitation_type ?? "정보 없음"}</p>
+              <small>Oracle DB의 해당 격자 예보를 표시합니다. 지도 색상형 기상 위험도는 별도 기능입니다.</small>
+            </div>
+          )}
+        </section>
+      )}
+
       {airspaceError && (
-        <p style={{ color: "red" }}>
+        <p className="analysis-error">
           ⚠️ {airspaceError}
         </p>
       )}

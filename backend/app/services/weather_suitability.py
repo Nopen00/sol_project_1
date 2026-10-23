@@ -114,43 +114,6 @@ def evaluate_flight(
 
     return "GOOD"
 
-if __name__ == "__main__":
-    print(evaluate_wind(1.8, 8.0))
-    print(evaluate_wind(4.0, 8.0))
-    print(evaluate_wind(6.0, 8.0))
-    print(evaluate_wind(None, 8.0))
-
-    print("=== 기온 테스트 ===")
-    print(evaluate_temperature(20, -10, 40))
-    print(evaluate_temperature(-2, -10, 40))
-    print(evaluate_temperature(37, -10, 40))
-    print(evaluate_temperature(45, -10, 40))
-    print(evaluate_temperature(None, -10, 40))
-
-    print("=== 강수 테스트 ===")
-    print(evaluate_precipitation("0", "0"))
-    print(evaluate_precipitation("1", "0"))
-    print(evaluate_precipitation("0", "2"))
-    print(evaluate_precipitation("3", "1"))
-    print(evaluate_precipitation("0", None))
-
-    print("=== 최종 비행 적합도 테스트 ===")
-
-    # 모든 조건 양호
-    print(evaluate_flight(1.8, 8.0, 22.3, -10, 40, "0", "0"))
-
-    # 풍속 주의
-    print(evaluate_flight(4.0, 8.0, 22.3, -10, 40, "0", "0"))
-
-    # 비가 오는 경우
-    print(evaluate_flight(1.8, 8.0, 22.3, -10, 40, "1", "0"))
-
-    # 강수 정보가 없는 경우
-    print(evaluate_flight(1.8, 8.0, 22.3, -10, 40, None, None))
-
-    # 강수 정보가 없어도 풍속이 위험한 경우
-    print(evaluate_flight(6.0, 8.0, 22.3, -10, 40, None, None))
-
 def evaluate_precipitation_verified(pty_raw, pty_status):
     if pty_raw is None:
         return "UNKNOWN"

@@ -1,3 +1,4 @@
+from app.schemas.weather import WeatherPointResponse
 from fastapi import APIRouter, HTTPException
 
 from app.services.weather_grid import latlon_to_grid
@@ -6,7 +7,7 @@ from app.services.weather_repository import get_weather
 router = APIRouter(prefix="/weather", tags=["weather"])
 
 
-@router.get("/point")
+@router.get("/point", response_model=WeatherPointResponse)
 def get_weather_point(latitude: float, longitude: float):
     try:
         nx, ny = latlon_to_grid(latitude, longitude)
