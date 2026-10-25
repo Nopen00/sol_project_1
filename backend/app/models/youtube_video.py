@@ -3,15 +3,16 @@ from sqlalchemy import (
     Date,
     String,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 from app.models.database import Base
-from datetime import datetime, timezone, date
+from datetime import datetime, date
 
 
 # video_id (PK), thumbnail_url, title, channel_title, published_at, saved_date
-class Youtube_video(Base):
+class YoutubeVideo(Base):
 
     __tablename__ = "youtube_videos"
+    __table_args__ = {'schema':'DRONE_APP'}
 
     video_id: Mapped[str] = mapped_column(String(20), nullable=False, primary_key=True)
     thumbnail_url: Mapped[str] = mapped_column(String(255), nullable=False)

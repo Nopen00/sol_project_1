@@ -3,12 +3,21 @@ from app.core.config import settings
 from datetime import datetime, timedelta, timezone,date
 import json
 from pathlib import Path
+from app.models.youtube_video import YoutubeVideo
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError
+from sqlalchemy import delete
+from app.models.database import SessionLocal
+import html
+
 
 
 URL = "https://www.googleapis.com/youtube/v3/search"
 SAMPLE_PATH = Path(__file__).resolve().parents[3] / "data" / "sample" / "yt_sample.json"
+MAX_VIDEO = 6
 
 
+# 유튜브에 params 조건으로 검색하라!
 def search_by_keyword():
     now = datetime.now(timezone.utc)
     week_ago = (now - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -16,7 +25,7 @@ def search_by_keyword():
     params = {
         "part": "id,snippet",
         "q": "드론 -쇼",
-        "maxResults": 6,
+        "maxResults": MAX_VIDEO,
         "type": "video",
         "order": "date",
         "regionCode": "KR",
@@ -36,28 +45,48 @@ def search_by_keyword():
     return results
 
 
-def save_youtube_db():
-    pass
+def extract_videos(results):
 
-
-def save_youtube_json(results):
     data = []
-    # dum = []
-
     for item in results["items"]:
-        
         data.append({
             "video_id" : item["id"]["videoId"],
             "thumbnail_url" :item["snippet"]["thumbnails"]["medium"]["url"],
-            "title" : item["snippet"]["title"],
-            "channel_title" : item["snippet"]["channelTitle"],
+            "title" : html.unescape(item["snippet"]["title"]),
+            "channel_title" : html.unescape(item["snippet"]["channelTitle"]),
             "published_at" : item["snippet"]["publishedAt"],
             "saved_date" : date.today().isoformat()
         })
 
+    return data
 
-    # data.append(dum)
+
+def save_youtube_db(db : Session, results):
+
+    videos = []
+    data = extract_videos(results)
+
+    for item in data:
+        video = YoutubeVideo(
+            video_id=item['video_id'],
+            thumbnail_url = item['thumbnail_url'],
+            title = item['title'],
+            channel_title = item['channel_title'],
+            published_at = datetime.fromisoformat(item['published_at']).replace(tzinfo=None),
+        )
+        videos.append(video)
     
+    db.execute(delete(YoutubeVideo)) 
+    db.add_all(videos)
+    db.commit()
+
+    return data
+
+
+def save_youtube_json(results):
+
+    data = extract_videos(results)
+
     with open(SAMPLE_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
 
@@ -66,12 +95,14 @@ def save_youtube_json(results):
     print(f"json 저장 확인 : {data_json}")
 
 
+
 if __name__ == "__main__":
     results = search_by_keyword()
+    with SessionLocal() as db:
 
-    # db 붙으면 db 오류나면 반환하는걸로 수정해서 전환
-    # if (save_youtube_db(results) == False|None):
-    #     save_youtube_json(results)
+        try:
+            save_youtube_db(db ,results)
+        except OperationalError:
+            save_youtube_json(results)
 
-    # 위에 만들어지기 전까지 임시용
-    save_youtube_json(results)
+
