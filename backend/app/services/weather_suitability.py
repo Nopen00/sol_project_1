@@ -1,17 +1,17 @@
 def evaluate_wind(wind_speed, max_wind):
-    # 날씨 정보가 없으면 판단 불가
+    wind_speed = float(wind_speed)
+    max_wind = float(max_wind)
+
     if wind_speed is None or max_wind is None or max_wind <= 0:
         return "UNKNOWN"
+    
 
-    # 드론 최대 내풍속 대비 현재 풍속 비율
     ratio = wind_speed / max_wind
 
     if ratio >= 0.7:
         return "NOT_RECOMMENDED"
-
     elif ratio >= 0.5:
         return "CAUTION"
-
     else:
         return "GOOD"
 

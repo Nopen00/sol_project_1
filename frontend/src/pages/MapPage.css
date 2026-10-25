@@ -1,8 +1,21 @@
+/* ==============================
+   1. 카카오 지도
+============================== */
+
 .map-box {
   height: 70vh;
   background: var(--color-gray-100);
   position: relative;
 }
+
+.kakao-map-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* ==============================
+   2. 지도 레이어 버튼
+============================== */
 
 .layer-toggle {
   position: absolute;
@@ -10,115 +23,241 @@
   top: 10px;
   display: grid;
   gap: 5px;
+  z-index: 5;
 }
 
 .layer-btn {
   border-radius: 5px;
-
   background-color: var(--color-white);
   cursor: pointer;
-  /* opacity: 0.5; */
   z-index: 4;
 }
 
 .layer-btn--on {
   background-color: var(--color-blue-400);
-  /* opacity: 1; */
 }
 
-.main-search {
-  max-width: 960px;
-  flex-wrap: wrap;
+/* ==============================
+   3. 지도 지역 검색창
+============================== */
+
+.map-location-search {
+  position: relative;
+  width: 90%;
+  max-width: 950px;
+  margin: 20px auto;
+  z-index: 20;
 }
 
-.main-search select {
+.map-location-search-form {
+  display: flex;
+  gap: 12px;
+}
+
+.map-location-search-form input {
   flex: 1;
-  min-width: 150px;
-  padding: var(--space-3) var(--space-4);
-  border: 0;
-  border-radius: var(--radius-md);
+  min-width: 0;
+  border: 1px solid #d6e1f0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-size: 16px;
+  color: #0b2548;
   background: white;
-  color: var(--color-map-text);
-  font-size: 15px;
 }
 
-.main-search select:disabled {
-  background: var(--color-map-disabled);
+.map-location-search-form button {
+  border: 0;
+  border-radius: 12px;
+  background: #06346c;
+  color: white;
+  padding: 12px 30px;
+  font-size: 16px;
+  cursor: pointer;
 }
 
-.main-search button:disabled {
+.map-location-search-form button:disabled {
   opacity: 0.6;
   cursor: wait;
 }
 
-.main-results {
-  max-width: var(--content-max);
-  margin: 0 auto;
-  padding: 36px var(--space-4) 0;
+/* ==============================
+   4. 자동완성 추천 검색어
+============================== */
+
+.map-location-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 110px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #d6e1f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px #001b3826;
+  z-index: 30;
 }
 
-.main-results h2 {
-  color: var(--color-navy-900);
+.map-location-suggestions button {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  border: 0;
+  background: white;
+  color: #0b2548;
+  cursor: pointer;
 }
 
-.main-results__location {
-  margin: 12px 0 20px;
-  font-size: 18px;
+.map-location-suggestions button:hover,
+.map-location-suggestions button:focus-visible {
+  background: #eaf2ff;
 }
 
-.main-results__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+.map-location-suggestion-message {
+  padding: 12px 16px;
+  color: #64748b;
 }
 
-.main-result-card {
+.map-location-search-error {
+  color: #b42318;
+  margin: 8px 0 0;
+}
+
+/* ==============================
+   5. 지도 하단 위치 정보
+============================== */
+
+.map-details {
   padding: 24px;
-  border: 1px solid var(--color-card-border);
-  border-radius: 16px;
-  background: var(--color-card-background);
+  max-width: 1200px;
+  margin: auto;
+  color: #102c54;
 }
 
-.main-result-card h3 {
+.map-details-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(260px, 1fr)
+  );
+  gap: 16px;
+}
+
+.map-details-card {
+  background: #f5f9ff;
+  border: 1px solid #dbe5f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 12px 0;
+}
+
+.map-details-card h3 {
   margin-top: 0;
-  color: var(--color-card-title);
 }
 
-.main-result-card p {
-  line-height: 1.7;
+.map-details-card select,
+.map-details-card button {
+  padding: 9px;
+  margin: 5px;
 }
 
-.main-result-card__final {
-  margin-top: 20px;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--color-status-positive);
+.map-details-notice {
+  color: #64748b;
+  font-size: 14px;
 }
 
-.main-results__notice {
-  margin-top: 14px;
-  color: var(--color-text-muted);
-  font-size: 13px;
-}
+/* ==============================
+   6. 반응형
+============================== */
 
-@media (max-width: 700px) {
-  .main-search {
-    flex-direction: column;
+@media (max-width: 600px) {
+  .map-box {
+    height: 58vh;
+    min-height: 350px;
   }
 
-  .main-results__grid {
-    grid-template-columns: 1fr;
+  .map-details {
+    padding: 16px;
+  }
+
+  .map-location-search {
+    width: auto;
+    max-width: none;
+    margin: 12px 16px;
+  }
+
+  .map-location-search-form button {
+    padding: 12px 18px;
+  }
+
+  .map-location-suggestions {
+    right: 0;
   }
 }
-/* 비행 적합도 상태 색상은 공통 디자인 토큰에서 관리 */
-.analysis-panel { padding: 20px; border: 1px solid var(--color-analysis-panel-border); }
-.analysis-result { margin-top: 20px; }
-.analysis-explanation { font-size: 14px; color: var(--color-analysis-explanation); }
-.analysis-error, .airspace-error { color: var(--color-analysis-danger); }
-.analysis-status--good { color: var(--color-analysis-good); }
-.analysis-status--caution { color: var(--color-analysis-caution); }
-.analysis-status--not-recommended { color: var(--color-analysis-danger); }
-.analysis-status--unknown { color: var(--color-analysis-unknown); }
-.analysis-final { font-weight: bold; }
 
-.map-weather-panel { padding: 20px; border: 1px solid var(--color-analysis-panel-border); border-radius: 8px; margin: 16px 0; }
+
+.map-location-search {
+  position: relative;
+  width: 90%;
+  max-width: 700px;
+  margin: 20px auto;
+  z-index: 20;
+}
+.map-location-search-form {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+.map-location-search-form input[type="search"] {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 74px;
+  box-sizing: border-box;
+  padding: 0 24px;
+  border: 2px solid #1a1a1a;
+  border-radius: 18px;
+  background: #fff;
+  color: #102c54;
+  font-size: 18px;
+  -webkit-appearance: auto;
+  appearance: auto;
+}
+/* 기존 CSS에서 기본 X를 숨기는 규칙이 있으면 제거해야 합니다. */
+.map-location-search-form input[type="search"]::-webkit-search-cancel-button {
+  display: block;
+  -webkit-appearance: searchfield-cancel-button;
+  cursor: pointer;
+}
+.map-location-search-form button[type="submit"] {
+  flex-shrink: 0;
+  height: 74px;
+  padding: 0 32px;
+  border: 0;
+  border-radius: 14px;
+  background: #082954;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+.map-location-search-form button[type="submit"]:disabled { opacity: .6; cursor: wait; }
+.map-location-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 128px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #d9e3f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px #0002;
+  z-index: 30;
+}
+@media (max-width: 600px) {
+  .map-location-search { width: auto; margin: 12px 16px; }
+  .map-location-search-form input[type="search"] { height: 56px; font-size: 16px; }
+  .map-location-search-form button[type="submit"] { height: 56px; padding: 0 18px; font-size: 16px; }
+  .map-location-suggestions { right: 0; }
+}

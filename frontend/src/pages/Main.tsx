@@ -3,13 +3,14 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import {
-  getRegions,
   getAirspaceAnalysis,
   getWeather,
-  type Region,
 } from "../api/MainAnalysis";
 
+import { searchKakaoLocation, suggestKakaoLocations } from "../features/map/kakaoSearch";
+import type { SearchLocation } from "../types/kakao";
 import "./Main.css";
+
 
 /* ================================
    주요 기능 카드
@@ -71,16 +72,13 @@ type WeatherResult = {
 export default function Main() {
   const navigate = useNavigate();
 
-  /* 지역 목록 */
-  const [regions, setRegions] = useState<Region[]>([]);
-
-  /* 지역 선택 */
-  const [province, setProvince] = useState("");
-  const [district, setDistrict] = useState("");
-
-  /* 검색 완료 지역 */
-  const [selectedRegion, setSelectedRegion] =
-    useState<Region | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState<SearchLocation | null>(null);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<SearchLocation | null>(null);
+  const [suggestions, setSuggestions] = useState<SearchLocation[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionLoading, setSuggestionLoading] = useState(false);
+  const [suggestionError, setSuggestionError] = useState("");
 
   /* 공역 및 날씨 결과 */
   const [airspace, setAirspace] =
@@ -100,49 +98,28 @@ export default function Main() {
   /* 중복 요청 결과 방지 */
   const requestIdRef = useRef(0);
 
-  /* ================================
-     지역 JSON 조회
-  ================================ */
-
   useEffect(() => {
-    let active = true;
+    const keyword = searchText.trim();
+    if (!showSuggestions || keyword.length < 2) return;
 
-    getRegions()
-      .then((data) => {
-        if (!active) return;
-
-        setRegions(data.regions);
-        setRegionError("");
-      })
-      .catch((error) => {
-        if (!active) return;
-
-        console.error("지역 목록 조회 실패:", error);
-        setRegionError("지역 목록을 불러오지 못했습니다.");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  /* ================================
-     시·도 목록
-  ================================ */
-
-  const provinces = regions.filter(
-    (region) => region.name === region.province
-  );
-
-  /* ================================
-     시·군·구 목록
-  ================================ */
-
-  const districts = regions.filter(
-    (region) =>
-      region.province === province &&
-      region.name !== province
-  );
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setSuggestionLoading(true);
+      setSuggestionError("");
+      try {
+        const result = await suggestKakaoLocations(keyword);
+        if (!cancelled) setSuggestions(result);
+      } catch (error) {
+        if (!cancelled) {
+          setSuggestions([]);
+          setSuggestionError(error instanceof Error ? error.message : "추천 장소를 조회하지 못했습니다.");
+        }
+      } finally {
+        if (!cancelled) setSuggestionLoading(false);
+      }
+    }, 350);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [searchText, showSuggestions]);
 
   /* ================================
      지역 검색 및 분석
@@ -151,33 +128,37 @@ export default function Main() {
   async function handleSearch(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!province) {
-      setRegionError("시·도를 선택해주세요.");
-      return;
-    }
-
-    const regionName = district || province;
-
-    const region = regions.find(
-      (item) => item.name === regionName
-    );
-
-    if (!region) {
-      setRegionError("선택한 지역의 좌표를 찾지 못했습니다.");
+    const keyword = searchText.trim();
+    if (!keyword) {
+      setRegionError("검색할 지역명 또는 주소를 입력해주세요.");
       return;
     }
 
     const currentRequestId = ++requestIdRef.current;
+    setShowSuggestions(false);
 
     setRegionError("");
     setAirspaceError("");
     setWeatherError("");
 
-    setSelectedRegion(region);
+    setSelectedRegion(null);
     setAirspace(null);
     setWeather(null);
-
     setLoading(true);
+
+    let region: SearchLocation;
+    try {
+      region = selectedSuggestion && selectedSuggestion.name === keyword
+        ? selectedSuggestion
+        : await searchKakaoLocation(keyword);
+    } catch (error) {
+      if (currentRequestId !== requestIdRef.current) return;
+      setRegionError(error instanceof Error ? error.message : "위치를 검색하지 못했습니다.");
+      setLoading(false);
+      return;
+    }
+    if (currentRequestId !== requestIdRef.current) return;
+    setSelectedRegion(region);
 
     const [airspaceResult, weatherResult] =
       await Promise.allSettled([
@@ -254,68 +235,66 @@ export default function Main() {
           비행 계획을 세워 보세요.
         </p>
 
-        <form
-          className="main-search"
-          onSubmit={handleSearch}
-        >
-          {/* 시·도 선택 */}
-          <select
-            aria-label="시·도 선택"
-            value={province}
-            onChange={(e) => {
-              setProvince(e.target.value);
-              setDistrict("");
-              setRegionError("");
-            }}
-          >
-            <option value="">시·도 선택</option>
+        <div className="main-search-wrapper">
+          <form className="main-search" onSubmit={handleSearch}>
+            <input
+              type="search"
+              aria-label="지역명 또는 주소 검색"
+              aria-autocomplete="list"
+              aria-expanded={showSuggestions && searchText.trim().length >= 2}
+              aria-controls="main-search-suggestion-list"
+              placeholder="지역명, 주소 또는 장소 입력 (예: 서울 강남구)"
+              autoComplete="off"
+              value={searchText}
+              onChange={(event) => {
+                setSearchText(event.target.value);
+                setSelectedSuggestion(null);
+                setSuggestions([]);
+                setShowSuggestions(true);
+                setSuggestionLoading(false);
+                setSuggestionError("");
+                setRegionError("");
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setShowSuggestions(false);
+              }}
+            />
+            <button type="submit" disabled={loading}>
+              {loading ? "조회 중..." : "검색"}
+            </button>
+          </form>
 
-            {provinces.map((region) => (
-              <option
-                key={region.name}
-                value={region.name}
-              >
-                {region.name}
-              </option>
-            ))}
-          </select>
-
-          {/* 시·군·구 선택 */}
-          <select
-            aria-label="시·군·구 선택"
-            value={district}
-            disabled={!province}
-            onChange={(e) => {
-              setDistrict(e.target.value);
-            }}
-          >
-            <option value="">
-              {province
-                ? `${province} 전체`
-                : "시·군·구 선택"}
-            </option>
-
-            {districts.map((region) => (
-              <option
-                key={region.name}
-                value={region.name}
-              >
-                {region.name.replace(
-                  `${province} `,
-                  ""
-                )}
-              </option>
-            ))}
-          </select>
-
-          {/* 검색 버튼 */}
-          <button
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? "조회 중..." : "검색"}
-          </button>
-        </form>
+          {showSuggestions && searchText.trim().length >= 2 && (
+            <div id="main-search-suggestion-list" className="search-autocomplete" role="listbox" aria-label="장소 검색 결과">
+              {suggestionLoading ? (
+                <div className="search-autocomplete-message">검색 중...</div>
+              ) : suggestionError ? (
+                <div className="search-autocomplete-message" role="status">{suggestionError}</div>
+              ) : suggestions.length === 0 ? (
+                <div className="search-autocomplete-message">추천 장소가 없습니다. 검색 버튼으로 주소 검색을 시도할 수 있습니다.</div>
+              ) : (
+                suggestions.map((place, index) => (
+                  <button
+                    key={`${place.lat}-${place.lng}-${index}`}
+                    type="button"
+                    role="option"
+                    aria-selected={false}
+                    className="search-autocomplete-item"
+                    onClick={() => {
+                      setSearchText(place.name);
+                      setSelectedSuggestion(place);
+                      setShowSuggestions(false);
+                      setSuggestions([]);
+                    }}
+                  >
+                    📍 {place.name}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
 
         {regionError && (
           <p role="alert">{regionError}</p>
@@ -436,9 +415,8 @@ export default function Main() {
           </div>
 
           <p className="main-results__notice">
-            선택한 지역의 대표 좌표를 기준으로
-            조회한 정보입니다. 지역 전체의
-            공역 및 기상 상태를 의미하지는 않습니다.
+            검색한 위치의 좌표를 기준으로 조회한 참고 정보입니다.
+            지역 전체의 상태를 의미하지 않으며, 실제 비행 승인은 최신 공식 정보로 확인하세요.
           </p>
         </section>
       )}

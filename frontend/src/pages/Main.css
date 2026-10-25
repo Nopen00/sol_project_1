@@ -188,3 +188,49 @@
 .main-result-card {
   cursor: default;
 }
+
+
+/* 검색 자동완성 및 분석 결과 보강 */
+/* Dynamic Kakao place suggestions */
+.main-search-wrapper {
+  position: relative;
+  max-width: 850px;
+  margin: 0 auto;
+}
+.main-search-wrapper .main-search { width: 100%; }
+.search-autocomplete {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: calc(100% - 116px);
+  max-height: 280px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #d9e3f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  z-index: 100;
+  text-align: left;
+}
+.search-autocomplete-item {
+  display: block;
+  width: 100%;
+  padding: 14px 18px;
+  border: 0;
+  background: #fff;
+  color: #102c52;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+.search-autocomplete-item:hover,
+.search-autocomplete-item:focus-visible { background: #e7f0ff; }
+.search-autocomplete-message { padding: 14px 18px; color: #64748b; font-size: 14px; }
+.search-autocomplete { width: 100%; }
+.main-search input { flex: 1; min-width: 0; padding: 16px 20px; border: 0; border-radius: 14px; background: white; color: #102c54; font-size: 16px; }
+.main-search-wrapper {position:relative; max-width:960px; margin:0 auto;}
+.search-autocomplete {position:absolute; top:calc(100% + 8px); left:0; width:calc(100% - 132px); max-height:280px; overflow-y:auto; background:white; border:1px solid #d9e3f0; border-radius:12px; box-shadow:0 8px 24px #0002; z-index:100; text-align:left;}
+.search-autocomplete-item {display:block; width:100%; padding:14px 18px; border:0; background:white; color:#102c52; text-align:left; cursor:pointer;}
+.search-autocomplete-item:hover,.search-autocomplete-item:focus-visible {background:#e7f0ff;}
+.search-autocomplete-message {padding:14px 18px; color:#64748b;}
+@media(max-width:600px){.search-autocomplete{width:100%;}}
