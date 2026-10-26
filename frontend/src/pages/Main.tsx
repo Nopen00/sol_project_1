@@ -60,7 +60,7 @@ export default function Main() {
       </section>
 
       <section className="main-features">
-        <h2></h2>
+        {/* <h2></h2> */}
         <ul className="main-features__list">
           {FEATURES.map((f) => (
             <li key={f.to}>
