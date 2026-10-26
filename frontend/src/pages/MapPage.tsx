@@ -115,7 +115,7 @@ export function MapView({ mode }: { mode: string }) {
           console.log("경도:", longitude);
 
           fetch(
-            `http://127.0.0.1:8001/airspace/analysis?longitude=${longitude}&latitude=${latitude}`
+            `http://127.0.0.1:8000/airspace/analysis?longitude=${longitude}&latitude=${latitude}`
           )
             .then((response) => {
               if (!response.ok) {
@@ -140,7 +140,7 @@ export function MapView({ mode }: { mode: string }) {
             });
 
           fetch(
-            `http://127.0.0.1:8001/airspace?longitude=${longitude}&latitude=${latitude}`
+            `http://127.0.0.1:8000/airspace?longitude=${longitude}&latitude=${latitude}`
           )
             .then((response) => {
               if (!response.ok) {
@@ -288,7 +288,7 @@ export function MapView({ mode }: { mode: string }) {
   }, [activeLayers]);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8001/drones")
+    fetch("http://127.0.0.1:8000/drones")
       .then((response) => {
         if (!response.ok) {
           throw new Error("드론 목록 조회 실패");
@@ -332,7 +332,7 @@ export function MapView({ mode }: { mode: string }) {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8001/flight-analysis?model_id=${encodeURIComponent(selectedDrone)}&latitude=${selectedLocation.latitude}&longitude=${selectedLocation.longitude}`
+        `http://127.0.0.1:8000/flight-analysis?model_id=${encodeURIComponent(selectedDrone)}&latitude=${selectedLocation.latitude}&longitude=${selectedLocation.longitude}`
       );
 
       if (!response.ok) {
