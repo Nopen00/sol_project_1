@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { useAuth } from "../features/auth/AuthContext";
+// import { useAuth } from "../features/auth/AuthContext";
 import "./Header.css";
 
 const MENUS = [
@@ -12,7 +12,7 @@ const MENUS = [
 ];
 
 export default function Header() {
-  const { isLoggedIn, logout } = useAuth();
+  // const { isLoggedIn, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const closeMenu = () => setIsOpen(false);
@@ -45,7 +45,7 @@ export default function Header() {
             ))}
           </ul>
 
-          <div className="header__auth">
+          {/* <div className="header__auth">
             {isLoggedIn ? (
               <>
                 <Link to="/mypage" onClick={closeMenu}>
@@ -75,7 +75,7 @@ export default function Header() {
                 </Link>
               </>
             )}
-          </div>
+          </div> */}
         </nav>
       </div>
     </header>
