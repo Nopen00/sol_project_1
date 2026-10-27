@@ -1,5 +1,12 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 .layout__main {
   min-height: 70vh;
+  flex: 1;
 }
 
 .layout__footer {

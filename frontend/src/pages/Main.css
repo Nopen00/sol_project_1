@@ -1,5 +1,9 @@
 .main-hero {
-  background: linear-gradient(135deg, var(--color-navy-900), var(--color-blue-500));
+  background: linear-gradient(
+    135deg,
+    var(--color-navy-900),
+    var(--color-blue-500)
+  );
   color: var(--color-white);
   text-align: center;
   padding: var(--space-12) var(--space-4);
@@ -44,10 +48,10 @@
   padding: var(--space-12) var(--space-4);
 }
 
-.main-features h2 {
+/* .main-features h2 {
   color: var(--color-navy-900);
   margin: 0 0 var(--space-6);
-}
+} */
 
 .main-features__list {
   display: grid;
