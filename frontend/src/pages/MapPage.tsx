@@ -6,6 +6,7 @@ import { loadMapSdk, type KakaoMapSdk, type MapInstance, type MarkerInstance, ty
 import type { SearchLocation } from "../types/kakao";
 import type { AirspaceAnalysis, AirspaceCollection, Drone, FlightResult, MapPoint, WeatherPoint } from "../types/mapDetails";
 import "./MapPage.css";
+import { createGridController } from "../features/map/mapGrid";
 
 const MODES = ["restricted", "weather", "suitability"];
 const LAYERS = [
@@ -61,10 +62,18 @@ export function MapView({ mode }: { mode: string }) {
   const sdkRef = useRef<KakaoMapSdk | null>(null);
   const markerRef = useRef<MarkerInstance | null>(null);
   const polygonsRef = useRef<PolygonInstance[]>([]);
+  const gridRef = useRef<ReturnType<typeof createGridController> | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const airspaceDataRef = useRef<AirspaceCollection | null>(null);
   const requestRef = useRef(0);
   const layersRef = useRef(layers);
   layersRef.current = layers;
+
+  useEffect(() => {
+    if (!mapReady || !gridRef.current) return;
+    if (layers.includes("grid")) gridRef.current.render();
+    else gridRef.current.clear();
+  }, [layers, mapReady]);
 
   useEffect(() => {
     const query = searchText.trim();
@@ -143,6 +152,7 @@ export function MapView({ mode }: { mode: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    let cleanupMap: (() => void) | null = null;
     loadMapSdk().then(sdk => {
       if (cancelled || !mapElement.current) return;
       sdkRef.current = sdk;
@@ -151,11 +161,32 @@ export function MapView({ mode }: { mode: string }) {
       const level = Number.isInteger(zoom) && zoom >= 1 && zoom <= 14 ? zoom : 6;
       const map = new sdk.Map(mapElement.current, { center: new sdk.LatLng(initial.latitude, initial.longitude), level });
       mapRef.current = map;
+      const grid = createGridController(sdk, map);
+      gridRef.current = grid;
+      const onGridIdle = () => {
+        if (layersRef.current.includes("grid")) grid.render();
+      };
+      sdk.event.addListener(map, "idle", onGridIdle);
+      cleanupMap = () => {
+        sdk.event.removeListener(map, "idle", onGridIdle);
+        grid.clear();
+      };
+      setMapReady(true);
       if (airspaceDataRef.current) drawAirspace(airspaceDataRef.current);
       if (parsePoint(params)) selectPoint(initial, false);
       sdk.event.addListener(map, "click", event => selectPoint({ latitude: event.latLng.getLat(), longitude: event.latLng.getLng() }));
     }).catch(error => { if (!cancelled) setAirspaceError(error instanceof Error ? error.message : "지도 로딩 실패"); });
-    return () => { cancelled = true; addressRequestRef.current += 1; requestRef.current += 1; clearPolygons(); markerRef.current?.setMap(null); markerRef.current = null; mapRef.current = null; };
+    return () => {
+      cancelled = true;
+      cleanupMap?.();
+      gridRef.current = null;
+      addressRequestRef.current += 1;
+      requestRef.current += 1;
+      clearPolygons();
+      markerRef.current?.setMap(null);
+      markerRef.current = null;
+      mapRef.current = null;
+    };
   }, [clearPolygons, drawAirspace, params, selectPoint]);
 
   useEffect(() => {

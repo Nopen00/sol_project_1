@@ -1,6 +1,6 @@
 /** 지도와 장소 검색에서 하나의 Kakao SDK 인스턴스를 공유한다. */
 export interface LatLng { getLat(): number; getLng(): number }
-export interface MapInstance { setCenter(position: LatLng): void }
+export interface MapInstance { setCenter(position: LatLng): void; getLevel(): number; getBounds(): { getSouthWest(): LatLng; getNorthEast(): LatLng } }
 export interface PolygonInstance { setMap(map: MapInstance | null): void }
 export interface MarkerInstance { setMap(map: MapInstance | null): void; setPosition(point: LatLng): void }
 export interface KakaoMapSdk {
@@ -9,7 +9,7 @@ export interface KakaoMapSdk {
   Map: new (container: HTMLElement, options: { center: LatLng; level: number }) => MapInstance;
   Marker: new (options: { map: MapInstance; position: LatLng }) => MarkerInstance;
   Polygon: new (options: { map: MapInstance; path: LatLng[][]; strokeWeight: number; strokeColor: string; strokeOpacity: number; fillColor: string; fillOpacity: number }) => PolygonInstance;
-  event: { addListener(target: MapInstance, event: "click", callback: (event: { latLng: LatLng }) => void): void };
+  event: { addListener(target: MapInstance, event: "click", callback: (event: { latLng: LatLng }) => void): void; addListener(target: MapInstance, event: "idle", callback: () => void): void; removeListener(target: MapInstance, event: "idle", callback: () => void): void };
 }
 interface KakaoGlobal { kakao?: { maps: KakaoMapSdk } }
 let loading: Promise<KakaoMapSdk> | null = null;
