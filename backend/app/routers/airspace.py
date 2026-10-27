@@ -4,13 +4,14 @@ from app.services.airspace import AirspaceUpstreamError
 logger = logging.getLogger(__name__)
 from fastapi import APIRouter, HTTPException, Query
 from app.services.airspace_analysis import analyze_airspace
+from app.schemas.airspace import AirspaceGeoJSONResponse, AirspaceAnalysisResponse
 
 from app.services.airspace import get_airspace
 
 router = APIRouter(prefix="/airspace", tags=["공역 정보"])
 
 
-@router.get("")
+@router.get("", response_model=AirspaceGeoJSONResponse)
 def read_airspace(
     longitude: float = Query(..., ge=-180, le=180),
     latitude: float = Query(..., ge=-90, le=90),
@@ -25,7 +26,7 @@ def read_airspace(
             detail="공역 정보를 조회하는 중 오류가 발생했습니다.",
         )
 
-@router.get("/analysis")
+@router.get("/analysis", response_model=AirspaceAnalysisResponse)
 def read_airspace_analysis(
     longitude: float = Query(..., ge=-180, le=180),
     latitude: float = Query(..., ge=-90, le=90),

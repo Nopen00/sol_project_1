@@ -38,13 +38,13 @@ app.add_middleware(
 )
 
 # 공역 조회 API 연결
-app.include_router(airspace_router)
+app.include_router(airspace_router, prefix="/api")
 # 드론 정보 API 연결
-app.include_router(drones_router)
-app.include_router(flight_analysis_router)
+app.include_router(drones_router, prefix="/api")
+app.include_router(flight_analysis_router, prefix="/api")
 
-app.include_router(regions_router)
-app.include_router(weather_router)
+app.include_router(regions_router, prefix="/api")
+app.include_router(weather_router, prefix="/api")
 
 @app.get("/")
 def home():

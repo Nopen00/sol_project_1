@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from fastapi import APIRouter
+from app.schemas.region import RegionsResponse
 
 router = APIRouter(prefix="/regions", tags=["regions"])
 
@@ -11,7 +12,7 @@ REGIONS_PATH = (
 )
 
 
-@router.get("")
+@router.get("", response_model=RegionsResponse)
 def get_regions():
     with REGIONS_PATH.open("r", encoding="utf-8") as f:
         return json.load(f)
