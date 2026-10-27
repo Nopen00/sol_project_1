@@ -1,0 +1,145 @@
+/* 전체 드론 정보 영역 */
+.drone-container {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 구역별 카드 */
+.drone-card {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+/* 제목 */
+.drone-card h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 20px;
+    color: #1f2937;
+}
+
+/* 입력창 */
+.drone-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+/* 드론 성능 정보 */
+.drone-spec {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+/* 성능 정보 박스 */
+.drone-spec-item {
+    background-color: #f3f6fa;
+    padding: 16px;
+    border-radius: 10px;
+}
+
+/* 분석 결과 */
+.drone-result {
+    padding: 16px;
+    border-radius: 10px;
+    background-color: #eef4ff;
+    font-weight: 600;
+}
+
+/* 모바일 화면 */
+@media (max-width: 600px) {
+    .drone-container {
+        padding: 12px;
+    }
+
+    .drone-spec {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 입력창 제목 */
+.drone-card label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* 분석 결과 제목 */
+.drone-result h4 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    color: #374151;
+}
+
+/* 분석 결과 내용 */
+.drone-result p {
+    margin: 0;
+    font-size: 16px;
+}
+
+/* 카드 안의 성능 수치 */
+.drone-spec-item strong {
+    font-size: 20px;
+    color: #1d4ed8;
+}
+
+/* 조건 충족 */
+.result-success {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+/* 조건 미충족 */
+.result-danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+/* 입력 대기 */
+.result-waiting {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+/* 드론 선택 카드 */
+.drone-card input:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* 카드 제목 */
+.drone-card h3 {
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+/* 카드 간격 */
+.drone-card+.drone-card {
+    margin-top: 20px;
+}
+
+.drone-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.drone-card h3 {
+    margin: 0 0 18px;
+}
