@@ -6,3 +6,7 @@ export interface NewsVideo{
   published_at : (string);
 }
 
+
+export interface NewsVideosResponse{
+  items : NewsVideo[]
+}
