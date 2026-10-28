@@ -111,3 +111,42 @@ def get_board_by_id(board_id: int):
 
     finally:
         session.close()
+
+
+def update_board(board_id: int, title: str, content: str):
+    session = get_session()
+
+    try:
+        result = session.execute(
+            text("""
+                UPDATE BOARDS
+                SET
+                    TITLE = :title,
+                    CONTENT = :content,
+                    UPDATED_AT = CURRENT_TIMESTAMP
+                WHERE BOARD_ID = :board_id
+            """),
+            {
+                "board_id": board_id,
+                "title": title,
+                "content": content,
+            },
+        )
+
+        if result.rowcount == 0:
+            session.rollback()
+            return None
+
+        session.commit()
+
+        return {
+            "board_id": board_id,
+            "message": "게시글이 수정되었습니다.",
+        }
+
+    except Exception:
+        session.rollback()
+        raise
+
+    finally:
+        session.close()        

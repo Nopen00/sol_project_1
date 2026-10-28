@@ -18,3 +18,8 @@ class BoardCreate(BaseModel):
 # 상세 조회 응답모델
 class BoardDetailResponse(BoardResponse):
     content: str
+
+
+class BoardUpdate(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    content: str = Field(min_length=1)    

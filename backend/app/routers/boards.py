@@ -1,6 +1,6 @@
 from fastapi import APIRouter ,HTTPException,status
-from app.schemas.board import BoardResponse,BoardCreate,BoardDetailResponse
-from app.services.board import list_boards ,create_board,get_board_by_id
+from app.schemas.board import BoardResponse,BoardCreate,BoardDetailResponse,BoardUpdate
+from app.services.board import list_boards ,create_board,get_board_by_id,update_board
 
 router = APIRouter()
 
@@ -42,3 +42,20 @@ def get_board_detail(board_id: int):
         )
 
     return board    
+
+
+@router.put("/boards/{board_id}")
+def put_board(board_id: int, data: BoardUpdate):
+    result = update_board(
+        board_id=board_id,
+        title=data.title,
+        content=data.content,
+    )
+
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="게시글을 찾을 수 없습니다.",
+        )
+
+    return result
