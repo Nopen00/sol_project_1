@@ -29,6 +29,7 @@ def list_boards():
 
 
 def create_board(user_id: int, title: str, content: str):
+
     session = get_session()
 
     try:
@@ -74,3 +75,39 @@ def create_board(user_id: int, title: str, content: str):
 
     finally:
         session.close()    
+
+
+
+def get_board_by_id(board_id: int):
+    session = get_session()
+
+    try:
+        result = session.execute(
+            text("""
+                SELECT
+                    BOARD_ID,
+                    USER_ID,
+                    TITLE,
+                    CONTENT,
+                    VIEW_COUNT,
+                    CREATED_AT
+                FROM BOARDS
+                WHERE BOARD_ID = :board_id
+            """),
+            {"board_id": board_id}
+        ).mappings().first()
+
+        if result is None:
+            return None
+
+        board = dict(result)
+
+        # Oracle CLOB 데이터를 문자열로 변환
+        content = board["content"]
+        if hasattr(content, "read"):
+            board["content"] = content.read()
+
+        return board
+
+    finally:
+        session.close()

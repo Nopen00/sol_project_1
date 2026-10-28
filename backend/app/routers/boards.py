@@ -1,15 +1,15 @@
 from fastapi import APIRouter ,HTTPException,status
-from app.schemas.board import BoardResponse,BoardCreate
-from app.services.board import list_boards ,create_board
+from app.schemas.board import BoardResponse,BoardCreate,BoardDetailResponse
+from app.services.board import list_boards ,create_board,get_board_by_id
 
 router = APIRouter()
 
-
+# 1. 게시글 목록 조회 
 @router.get("/boards", response_model=list[BoardResponse])
 def get_boards():
     return list_boards()
 
-
+# 2. 게시글 작성 
 @router.post(
     "/boards",
     status_code=status.HTTP_201_CREATED
@@ -27,3 +27,18 @@ def post_board(data: BoardCreate):
             status_code=404,
             detail=str(e)
         )
+# 3. 게시글 상세 조회
+@router.get(
+    "/boards/{board_id}",
+    response_model=BoardDetailResponse
+)
+def get_board_detail(board_id: int):
+    board = get_board_by_id(board_id)
+
+    if board is None:
+        raise HTTPException(
+            status_code=404,
+            detail="게시글을 찾을 수 없습니다."
+        )
+
+    return board    

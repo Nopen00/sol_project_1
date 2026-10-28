@@ -14,3 +14,7 @@ class BoardCreate(BaseModel):
     user_id: int
     title: str = Field(min_length=1, max_length=200)
     content: str = Field(min_length=1)    
+
+# 상세 조회 응답모델
+class BoardDetailResponse(BoardResponse):
+    content: str
