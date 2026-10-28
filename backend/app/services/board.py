@@ -1,7 +1,7 @@
 from sqlalchemy import text
 from app.core.database import get_session
 
-
+# 전체 게시글 목록 (select 로 조회)
 def list_boards():
     session = get_session()
 
@@ -27,7 +27,7 @@ def list_boards():
     finally:
         session.close()
 
-
+# 게시글 작성 (userid 조회, insert)
 def create_board(user_id: int, title: str, content: str):
 
     session = get_session()
@@ -77,7 +77,7 @@ def create_board(user_id: int, title: str, content: str):
         session.close()    
 
 
-
+# 특정 게시글 상세조회 (board_id 조회)
 def get_board_by_id(board_id: int):
     session = get_session()
 
@@ -112,7 +112,7 @@ def get_board_by_id(board_id: int):
     finally:
         session.close()
 
-
+# 게시글 수정 (board_id 조회, update)
 def update_board(board_id: int, title: str, content: str):
     session = get_session()
 
@@ -150,3 +150,54 @@ def update_board(board_id: int, title: str, content: str):
 
     finally:
         session.close()        
+
+# 게시글 삭제
+def delete_board(board_id: int):
+    session = get_session()
+
+    try:
+        # 1. 삭제할 게시글이 존재하는지 확인
+        board = session.execute(
+            text("""
+                SELECT BOARD_ID
+                FROM BOARDS
+                WHERE BOARD_ID = :board_id
+            """),
+            {"board_id": board_id}
+        ).first()
+
+        if board is None:
+            return None
+
+        # 2. 게시글에 연결된 댓글 먼저 삭제
+        session.execute(
+            text("""
+                DELETE FROM COMMENTS
+                WHERE BOARD_ID = :board_id
+            """),
+            {"board_id": board_id}
+        )
+
+        # 3. 게시글 삭제
+        session.execute(
+            text("""
+                DELETE FROM BOARDS
+                WHERE BOARD_ID = :board_id
+            """),
+            {"board_id": board_id}
+        )
+
+        # 4. 변경 사항 저장
+        session.commit()
+
+        return {
+            "board_id": board_id,
+            "message": "게시글이 삭제되었습니다."
+        }
+
+    except Exception:
+        session.rollback()
+        raise
+
+    finally:
+        session.close()
