@@ -42,6 +42,7 @@ dependencies = [
     "oracledb==26.0.1",
     "pandas==3.0.6",
     "protobuf==7.36.2",
+    "pwdlib[argon2]>=0.3.1",
     "pydantic==2.14.1",
     "pydantic-core==2.50.1",
     "pydantic-extra-types==2.11.1",

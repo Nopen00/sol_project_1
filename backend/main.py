@@ -16,6 +16,8 @@ from app.routers.weather import router as weather_router
 
 from app.routers.boards import router as boards_router
 
+from app.routers.auth import router as auth_router
+
 
 app = FastAPI(title="드론 공역 API 테스트")
 logger = logging.getLogger(__name__)
@@ -49,6 +51,8 @@ app.include_router(regions_router, prefix="/api")
 app.include_router(weather_router, prefix="/api")
 # 게시판
 app.include_router(boards_router, prefix="/api")
+# 회원가입
+app.include_router(auth_router, prefix="/api")
 
 @app.get("/")
 def home():
