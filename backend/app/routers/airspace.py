@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.services.airspace_analysis import analyze_airspace
-
 from app.services.airspace import get_airspace
 
 router = APIRouter(prefix="/airspace", tags=["공역 정보"])

@@ -4,7 +4,7 @@ import ComingSoon from "./components/ComingSoon";
 import Main from "./pages/Main";
 import MapPage from "./pages/MapPage";
 import DroneInfo from "./pages/DroneInfo";
-// import FlightAnalysis from "./pages/FlightAnalysis";
+import FlightAnalysis from "./pages/FlightAnalysis";
 
 export default function App() {
   return (
@@ -21,7 +21,7 @@ export default function App() {
           <Route path="/drone-info" element={<DroneInfo />} />
 
           {/* 비행 분석 페이지 */}
-          {/* <Route path="/flight-analysis" element={<FlightAnalysis />} /> */}
+          {<Route path="/flight-analysis" element={<FlightAnalysis />} />}
 
           {/* 아직 없는 페이지 */}
           <Route path="*" element={<ComingSoon />} />

@@ -36,6 +36,7 @@ def search_by_keyword():
     }
 
     res = requests.get(URL, params, timeout=10)
+
     res.raise_for_status()
     results = res.json()
 

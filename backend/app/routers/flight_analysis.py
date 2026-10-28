@@ -5,7 +5,6 @@ from app.services.weather_grid import latlon_to_grid
 
 router = APIRouter()
 
-
 @router.get("/flight-analysis")
 def get_flight_analysis(
     model_id: str,
