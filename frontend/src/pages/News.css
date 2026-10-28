@@ -1,0 +1,22 @@
+.news-page{
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: var(--space-4);
+}
+.news-page-header{
+
+}
+.news-video{
+
+}
+
+.news-videocard{
+    padding: var(--space-4);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-4);
+    /* border: 2px solid rgb(41, 60, 158); */
+    /* background-color: rgba(128, 128, 128, 0.427); */
+    /* border-radius: 1em; */
+
+}

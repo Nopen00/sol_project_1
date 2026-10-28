@@ -5,6 +5,7 @@ import Main from "./pages/Main";
 import MapPage from "./pages/MapPage";
 import DroneInfo from "./pages/DroneInfo";
 import FlightAnalysis from "./pages/FlightAnalysis";
+import News from "./pages/News";
 
 export default function App() {
   return (
@@ -22,6 +23,9 @@ export default function App() {
 
           {/* 비행 분석 페이지 */}
           {<Route path="/flight-analysis" element={<FlightAnalysis />} />}
+
+          {/* 최신 정보 페이지 */}
+          <Route path="/news" element={<News />} />
 
           {/* 아직 없는 페이지 */}
           <Route path="*" element={<ComingSoon />} />

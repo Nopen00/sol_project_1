@@ -1,0 +1,44 @@
+.video-card{
+    display: block;
+    height: 100%;
+    background-color: var(--color-white);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.video-card__thumb{
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+}
+
+.video-card__body{
+    padding: var(--space-4);
+    text-align: left;
+}
+
+.video-card__body p, h3{
+    padding: var(--space-4);
+    text-align: left;
+    box-shadow: var(--shadow-card);
+    border-radius: var(--radius-md);
+    
+}
+
+.go_video{
+    font-weight: bold;
+    color: var(--color-white);
+    padding: var(--space-4);
+    background-color: blue;
+    box-shadow: var(--shadow-card);
+    border-radius: var(--radius-md);
+    display: inline-block;
+    margin: var(--space-4);
+    ;
+    
+}
+.go_video_box{
+    text-align: right;
+}
