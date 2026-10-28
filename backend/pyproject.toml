@@ -48,6 +48,7 @@ dependencies = [
     "pydantic-extra-types==2.11.1",
     "pydantic-settings==2.16.0",
     "pygments==2.21.0",
+    "pyjwt>=2.15.1",
     "python-dateutil==2.9.0.post0",
     "python-dotenv==1.2.4",
     "python-multipart==0.0.32",

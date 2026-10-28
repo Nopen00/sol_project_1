@@ -4,6 +4,14 @@ from pwdlib import PasswordHash
 
 from app.core.database import get_session
 
+from dotenv import load_dotenv
+import os
+from datetime import datetime,timedelta,timezone
+
+import jwt
+from sqlalchemy import text
+
+load_dotenv()
 
 password_hash = PasswordHash.recommended()
 
@@ -74,3 +82,72 @@ def signup_user(username: str, password: str):
 
     finally:
         session.close()
+
+
+def create_access_token(user_id: int):
+    secret_key = os.environ.get("JWT_SECRET_KEY")
+
+    if not secret_key:
+        raise RuntimeError("JWT_SECRET_KEY가 설정되지 않았습니다.")
+
+    algorithm = os.environ.get("JWT_ALGORITHM", "HS256")
+
+    expire_minutes = int(
+        os.environ.get("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+    )
+
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=expire_minutes
+    )
+
+    payload = {
+        "sub": str(user_id),
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+    }
+
+    return jwt.encode(
+        payload,
+        secret_key,
+        algorithm=algorithm,
+    )
+
+
+def login_user(username: str, password: str):
+    session = get_session()
+
+    try:
+        user = session.execute(
+            text("""
+                SELECT
+                    USER_ID,
+                    USERNAME,
+                    PASSWORD_HASH
+                FROM USERS
+                WHERE USERNAME = :username
+            """),
+            {"username": username}
+        ).mappings().first()
+
+        if user is None:
+            return None
+
+        stored_hash = user["password_hash"]
+
+        # 기존 테스트용 dummy_hash_only 등은
+        # 실제 Argon2 해시가 아니므로 인증하지 않음
+        if not stored_hash or not stored_hash.startswith("$argon2"):
+            return None
+
+        if not password_hash.verify(password, stored_hash):
+            return None
+
+        token = create_access_token(user["user_id"])
+
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+        }
+
+    finally:
+        session.close()        
