@@ -5,6 +5,7 @@ import InfoBox from "../components/InfoBox";
 import DroneSelect from "../features/weather/DroneSelect";
 import { getDroneModels } from "../api/droneApi";
 import type { DroneModel } from "../types/drone";
+import type { FlightAnalysisResult, WeatherSnapshot } from "../types/flight";
 import { createGridController } from "../features/map/mapGrid";
 
 const MODES = ["restricted", "weather", "suitability"];
@@ -24,7 +25,11 @@ export function MapView({ mode }: { mode: string }) {
   const [searchError, setSearchError] = useState("");
   const [locationName, setLocationName] = useState("선택 위치");
   const [selectedDrone, setSelectedDrone] = useState("");
-  const [flightResult, setFlightResult] = useState<any>(null);
+  const [flightResult, setFlightResult] = useState<FlightAnalysisResult | null>(
+    null,
+  );
+  const [weatherSnapshot, setWeatherSnapshot] =
+    useState<WeatherSnapshot | null>(null);
   const [flightLoading, setFlightLoading] = useState(false);
   const [flightError, setFlightError] = useState("");
   const [activeLayers, setActiveLayers] = useState<string[]>(
@@ -76,6 +81,7 @@ export function MapView({ mode }: { mode: string }) {
     map.setCenter(pos);
     setSelectedLocation({ latitude, longitude });
     setFlightResult(null);
+    setWeatherSnapshot(null);
     if (name) setLocationName(name);
     else {
       const id = ++lookupRef.current;
@@ -534,19 +540,14 @@ export function MapView({ mode }: { mode: string }) {
 
       case "suitability": {
         if (!selectedDrone) return <p>드론 기종을 선택하세요.</p>;
+        if (!selectedLocation) return <p>지도에서 위치를 클릭하세요.</p>;
+        if (flightLoading) return <p>분석 중…</p>;
+        if (flightError) return <p>⚠️ {flightError}</p>;
+        if (!flightResult) return null;
 
         const droneName =
           drones.find((drone) => drone.id === selectedDrone)?.name ??
           selectedDrone;
-
-        if (!flightResult) {
-          return (
-            <>
-              <p>기종: {droneName}</p>
-              <p>비행 적합도 분석 버튼을 눌러 주세요.</p>
-            </>
-          );
-        }
 
         const finalInfo = getResultInfo(flightResult.final_result);
         return (
@@ -570,44 +571,66 @@ export function MapView({ mode }: { mode: string }) {
       case "grid":
         return <p>지도 확대 정도에 맞춰 격자 크기가 자동으로 합쳐져요.</p>;
 
+      case "weather":
+        if (!weatherSnapshot) {
+          return <p>기종을 선택하고 위치를 클릭하면 날씨를 볼 수 있어요.</p>;
+        }
+        return (
+          <>
+            <p>예보 시각: {weatherSnapshot.forecastAt.slice(11, 16)}</p>
+            <p>기온: {weatherSnapshot.temperature}℃</p>
+            <p>풍속: {weatherSnapshot.windSpeed} m/s</p>
+          </>
+        );
+
       default:
-        // 날씨는 아직 준비 중
-        return <p>날씨 정보는 준비 중이에요.</p>;
+        return null;
     }
   }
 
-  async function analyzeFlight() {
-    if (!selectedDrone) {
-      setFlightError("드론을 먼저 선택해주세요.");
-      return;
-    }
-    if (!selectedLocation) {
-      setFlightError("지도에서 분석할 위치를 먼저 클릭해주세요.");
+  // 기종과 위치가 둘 다 정해지면 자동으로 비행 적합도를 분석
+  useEffect(() => {
+    if (!selectedDrone || !selectedLocation) {
+      setFlightLoading(false);
+      setFlightResult(null);
+      setFlightError("");
       return;
     }
 
+    let cancelled = false;
     setFlightLoading(true);
     setFlightError("");
     setFlightResult(null);
 
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/flight-analysis?model_id=${encodeURIComponent(selectedDrone)}&latitude=${selectedLocation.latitude}&longitude=${selectedLocation.longitude}`,
-      );
+    fetch(
+      `http://127.0.0.1:8000/flight-analysis?model_id=${encodeURIComponent(selectedDrone)}&latitude=${selectedLocation.latitude}&longitude=${selectedLocation.longitude}`,
+    )
+      .then((response) => {
+        if (!response.ok) throw new Error("분석 요청 실패");
+        return response.json();
+      })
+      .then((data: FlightAnalysisResult) => {
+        if (cancelled) return;
+        setFlightResult(data);
+        setWeatherSnapshot({
+          forecastAt: data.forecast_at,
+          temperature: data.temperature,
+          windSpeed: data.wind_speed,
+        });
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error(error);
+        setFlightError("비행 적합도 분석에 실패했습니다.");
+      })
+      .finally(() => {
+        if (!cancelled) setFlightLoading(false);
+      });
 
-      if (!response.ok) {
-        throw new Error("분석 요청 실패");
-      }
-
-      const data = await response.json();
-      setFlightResult(data);
-    } catch (error) {
-      console.error(error);
-      setFlightError("비행 적합도 분석에 실패했습니다.");
-    } finally {
-      setFlightLoading(false);
-    }
-  }
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDrone, selectedLocation]);
 
   return (
     <section>
@@ -680,13 +703,6 @@ export function MapView({ mode }: { mode: string }) {
             value={selectedDrone}
             onChange={setSelectedDrone}
           />
-          <button
-            type="button"
-            onClick={analyzeFlight}
-            disabled={flightLoading || !selectedDrone}
-          >
-            {flightLoading ? "분석 중..." : "비행 적합도 분석"}
-          </button>
         </div>
       </div>
 
@@ -716,39 +732,12 @@ export function MapView({ mode }: { mode: string }) {
       {activeLayers.includes("suitability") && (
         <div style={{ padding: "20px", border: "1px solid #ddd" }}>
           <h3>드론 비행 적합도 분석</h3>
-
-          <label htmlFor="drone-select">드론 선택: </label>
-
-          <select
-            id="drone-select"
-            value={selectedDrone}
-            onChange={(e) => {
-              setSelectedDrone(e.target.value);
-              setFlightResult(null);
-              setFlightError("");
-            }}
-          >
-            <option value="">드론을 선택하세요</option>
-
-            {drones.map((drone) => (
-              <option key={drone.id} value={drone.id}>
-                {drone.name}
-              </option>
-            ))}
-          </select>
-
+          <p>기종을 선택하고 지도에서 위치를 클릭하면 자동으로 분석해요.</p>
           <p>
             {selectedLocation
               ? `선택한 위치: 위도 ${selectedLocation.latitude.toFixed(4)}, 경도 ${selectedLocation.longitude.toFixed(4)}`
               : "지도에서 분석할 위치를 클릭해주세요."}
           </p>
-          <button
-            type="button"
-            onClick={analyzeFlight}
-            disabled={flightLoading || !selectedDrone}
-          >
-            {flightLoading ? "분석 중..." : "비행 적합도 분석"}
-          </button>
 
           {flightError && <p style={{ color: "red" }}>{flightError}</p>}
 
