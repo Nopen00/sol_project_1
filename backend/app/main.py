@@ -1,7 +1,13 @@
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers.youtube import youtube_router
 
+from app.routers.youtube import youtube_router
+from app.routers.drones import router as drones_router
+from app.routers.airspace import router as airspace_router
+from app.routers.flight_analysis import router as flight_analysis_router
+from app.routers.weather_national import router as weather_national_router
+from app.routers.weather import router as weather_router
 
 app = FastAPI()
 
@@ -15,3 +21,15 @@ app.add_middleware(
 )
 
 app.include_router(youtube_router)
+
+# 드론 데이터 조회
+app.include_router(drones_router)
+
+# 비행금지구역 및 비행제한구역 조회
+app.include_router(airspace_router)
+
+# 드론 비행 분석
+app.include_router(flight_analysis_router)
+
+# 전국 날씨 조회
+app.include_router(weather_national_router)
