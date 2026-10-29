@@ -3,7 +3,8 @@
   color: var(--color-white);
   position: sticky;
   top: 0;
-  z-index: 10;
+  /* 지역 검색 기능에 헤더 가려짐으로 인한 수정 */
+  z-index: 40;
 }
 
 .header__inner {
