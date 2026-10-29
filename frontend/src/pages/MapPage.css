@@ -50,6 +50,13 @@
   display: flex;
   gap: var(--space-3);
 }
+/* 드론 기종 드롭박스를 분석 버튼 위로 쌓는다 */
+.map-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
 
 /* Jihoon 검색 기능 - front-news 기존 레이아웃 유지 */
 .map-search-wrapper {

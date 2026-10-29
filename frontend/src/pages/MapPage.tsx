@@ -1,6 +1,6 @@
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import "./MapPage.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import InfoBox from "../components/InfoBox";
 import DroneSelect from "../features/weather/DroneSelect";
 import { getDroneModels } from "../api/droneApi";
@@ -508,6 +508,73 @@ export function MapView({ mode }: { mode: string }) {
         return { text: "판단 불가", color: "#6b7280", icon: "⚪" };
     }
   }
+  // 공역 판정 결과를 제목 글자로 바꿔 주는 함수
+  function getAirspaceTitle(status: string) {
+    if (status === "PROHIBITED_AIRSPACE") return "🚫 비행금지구역";
+    if (status === "RESTRICTED_AIRSPACE") return "⚠️ 비행제한구역";
+    return "🔎 추가 확인 필요";
+  }
+
+  // 레이어 버튼마다 정보 상자 안에 보여 줄 내용
+  function renderInfo(layerId: string): ReactNode {
+    switch (layerId) {
+      case "restricted":
+        if (airspaceError) return <p>⚠️ {airspaceError}</p>;
+        if (!airspaceResult) {
+          return <p>지도를 클릭하면 이 지점의 공역을 확인해요.</p>;
+        }
+        return (
+          <>
+            <p>
+              <strong>{getAirspaceTitle(airspaceResult.status)}</strong>
+            </p>
+            <p>조회된 공역: {airspaceResult.airspace_count}개</p>
+          </>
+        );
+
+      case "suitability": {
+        if (!selectedDrone) return <p>드론 기종을 선택하세요.</p>;
+
+        const droneName =
+          drones.find((drone) => drone.id === selectedDrone)?.name ??
+          selectedDrone;
+
+        if (!flightResult) {
+          return (
+            <>
+              <p>기종: {droneName}</p>
+              <p>비행 적합도 분석 버튼을 눌러 주세요.</p>
+            </>
+          );
+        }
+
+        const finalInfo = getResultInfo(flightResult.final_result);
+        return (
+          <>
+            <p>기종: {droneName}</p>
+            <p style={{ color: finalInfo.color }}>
+              <strong>
+                {finalInfo.icon} {finalInfo.text}
+              </strong>
+            </p>
+            <p>
+              풍속 {flightResult.wind_speed} / {flightResult.max_wind} m/s
+            </p>
+            <small>
+              참고용입니다. 실제 비행 승인은 최신 공식 정보로 확인하세요.
+            </small>
+          </>
+        );
+      }
+
+      case "grid":
+        return <p>지도 확대 정도에 맞춰 격자 크기가 자동으로 합쳐져요.</p>;
+
+      default:
+        // 날씨는 아직 준비 중
+        return <p>날씨 정보는 준비 중이에요.</p>;
+    }
+  }
 
   async function analyzeFlight() {
     if (!selectedDrone) {
@@ -602,10 +669,24 @@ export function MapView({ mode }: { mode: string }) {
             const layer = LAYERS.find((item) => item.id === layerId);
             return (
               <InfoBox key={layerId} title={layer ? layer.label : layerId}>
-                임시내용
+                {renderInfo(layerId)}
               </InfoBox>
             );
           })}
+        </div>
+        <div className="map-actions">
+          <DroneSelect
+            options={drones}
+            value={selectedDrone}
+            onChange={setSelectedDrone}
+          />
+          <button
+            type="button"
+            onClick={analyzeFlight}
+            disabled={flightLoading || !selectedDrone}
+          >
+            {flightLoading ? "분석 중..." : "비행 적합도 분석"}
+          </button>
         </div>
       </div>
 

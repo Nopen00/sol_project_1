@@ -10,7 +10,7 @@ export default function InfoBox({ title, children }: InfoBoxProps) {
   return (
     <div className="info-box">
       <h3 className="info-box__title">{title}</h3>
-      <div className="info-box__body">{children}</div>
+      <div className="info-box__body">{children} </div>
     </div>
   );
 }
