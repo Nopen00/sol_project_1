@@ -1,10 +1,11 @@
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import "./MapPage.css";
 import { useEffect, useRef, useState } from "react";
 import InfoBox from "../components/InfoBox";
 import DroneSelect from "../features/weather/DroneSelect";
 import { getDroneModels } from "../api/droneApi";
 import type { DroneModel } from "../types/drone";
+import { createGridController } from "../features/map/mapGrid";
 
 const MODES = ["restricted", "weather", "suitability"];
 const LAYERS = [
@@ -15,6 +16,12 @@ const LAYERS = [
 ];
 export function MapView({ mode }: { mode: string }) {
 
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
+  const [searchText, setSearchText] = useState(initialQuery);
+  const [suggestions, setSuggestions] = useState<Array<{name: string; lat: number; lng: number}>>([]);
+  const [searchError, setSearchError] = useState("");
+  const [locationName, setLocationName] = useState("선택 위치");
   const [selectedDrone, setSelectedDrone] = useState("");
   const [flightResult, setFlightResult] = useState<any>(null);
   const [flightLoading, setFlightLoading] = useState(false);
@@ -49,6 +56,73 @@ export function MapView({ mode }: { mode: string }) {
   const [airspaceError, setAirspaceError] = useState<string | null>(null);
   const analysisRequestId = useRef(0);
   const polygonsRef = useRef<any[]>([]);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const gridControllerRef = useRef<ReturnType<typeof createGridController> | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const kakaoRef = useRef<any>(null);
+  const lookupRef = useRef(0);
+  const queryRef = useRef(initialQuery);
+  const choosePoint = (latitude: number, longitude: number, name?: string) => {
+    const kakao = kakaoRef.current;
+    const map = mapRef.current;
+    if (!kakao || !map) return;
+    const pos = new kakao.maps.LatLng(latitude, longitude);
+    if (markerRef.current) markerRef.current.setPosition(pos);
+    else markerRef.current = new kakao.maps.Marker({ map, position: pos });
+    map.setCenter(pos);
+    setSelectedLocation({ latitude, longitude });
+    setFlightResult(null);
+    if (name) setLocationName(name);
+    else {
+      const id = ++lookupRef.current;
+      new kakao.maps.services.Geocoder().coord2Address(longitude, latitude, (result: any[], status: string) => {
+        if (id !== lookupRef.current) return;
+        setLocationName(status === kakao.maps.services.Status.OK && result.length
+          ? result[0].road_address?.address_name || result[0].address?.address_name || "주소 정보 없음"
+          : "주소 정보 없음");
+      });
+    }
+  };
+  const findPlaces = (query: string): Promise<Array<{name: string; lat: number; lng: number}>> =>
+    new Promise((resolve, reject) => {
+      const kakao = kakaoRef.current;
+      if (!kakao?.maps?.services) { reject(new Error("카카오 검색 SDK 준비 중입니다.")); return; }
+      const convert = (items: any[]) => items.slice(0, 5).map(item => ({
+        name: item.place_name || item.address_name || query,
+        lat: Number(item.y), lng: Number(item.x)
+      }));
+      new kakao.maps.services.Geocoder().addressSearch(query, (addresses: any[], addressStatus: string) => {
+        if (addressStatus === kakao.maps.services.Status.OK && addresses.length) {
+          resolve(convert(addresses)); return;
+        }
+        new kakao.maps.services.Places().keywordSearch(query, (places: any[], status: string) => {
+          if (status === kakao.maps.services.Status.OK) resolve(convert(places));
+          else if (status === kakao.maps.services.Status.ZERO_RESULT) resolve([]);
+          else reject(new Error("검색 실패"));
+        });
+      });
+    });
+  useEffect(() => {
+    if (searchText.trim().length < 2) { setSuggestions([]); return; }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void findPlaces(searchText.trim()).then(items => { if (!cancelled) setSuggestions(items); })
+        .catch(() => { if (!cancelled) setSuggestions([]); });
+    }, 350);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [searchText]);
+  async function searchLocation(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      const results = await findPlaces(searchText.trim());
+      if (!results.length) { setSearchError("검색 결과가 없습니다."); return; }
+      setSearchError(""); setSuggestions([]);
+      choosePoint(results[0].lat, results[0].lng, results[0].name);
+      mapRef.current?.setLevel(5);
+    } catch (error) { setSearchError(error instanceof Error ? error.message : "검색 실패"); }
+  }
+
   const infoWindowRef = useRef<any>(null);
   const activeLayersRef = useRef(activeLayers);
 
@@ -74,7 +148,7 @@ export function MapView({ mode }: { mode: string }) {
 
     const script = document.createElement("script");
 
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(kakaoKey)}&autoload=false`;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(kakaoKey)}&autoload=false&libraries=services`;
 
     script.onload = () => {
       const kakao = (window as any).kakao;
@@ -90,6 +164,42 @@ export function MapView({ mode }: { mode: string }) {
         };
 
         const map = new kakao.maps.Map(container, options);
+        mapRef.current = map;
+        kakaoRef.current = kakao;
+
+        // 격자 컨트롤러를 지도에 연결
+        const gridController = createGridController(kakao.maps, map);
+        gridControllerRef.current = gridController;
+        setMapReady(true);
+
+        // 지도 이동·확대·축소가 끝나면 현재 격자 다시 계산
+        kakao.maps.event.addListener(map, "idle", () => {
+          if (activeLayersRef.current.includes("grid")) {
+            gridController.render();
+          }
+        });
+
+        // SDK 로딩 전에 격자 버튼을 켠 경우에도 표시
+        if (activeLayersRef.current.includes("grid")) {
+          gridController.render();
+        }
+        if (queryRef.current) {
+          const query = queryRef.current;
+          queryRef.current = "";
+          new kakao.maps.services.Geocoder().addressSearch(query, (addresses: any[], status: string) => {
+            if (status === kakao.maps.services.Status.OK && addresses.length) {
+              choosePoint(Number(addresses[0].y), Number(addresses[0].x), addresses[0].address_name);
+              map.setLevel(5);
+            } else {
+              new kakao.maps.services.Places().keywordSearch(query, (places: any[], placeStatus: string) => {
+                if (placeStatus === kakao.maps.services.Status.OK && places.length) {
+                  choosePoint(Number(places[0].y), Number(places[0].x), places[0].place_name);
+                  map.setLevel(5);
+                } else setSearchError("검색 결과가 없습니다.");
+              });
+            }
+          });
+        }
 
         kakao.maps.event.addListener(map, "click", (mouseEvent: any) => {
           const requestId = ++analysisRequestId.current;
@@ -101,17 +211,11 @@ export function MapView({ mode }: { mode: string }) {
 
           polygonsRef.current = [];
 
-          if (
-            !activeLayersRef.current.includes("restricted") &&
-            !activeLayersRef.current.includes("suitability")
-          ) {
-            return;
-          }
           const latlng = mouseEvent.latLng;
 
           const latitude = latlng.getLat();
           const longitude = latlng.getLng();
-          setSelectedLocation({ latitude, longitude });
+          choosePoint(latitude, longitude);
 
           if (!activeLayersRef.current.includes("restricted")) {
             return;
@@ -267,6 +371,13 @@ export function MapView({ mode }: { mode: string }) {
     document.head.appendChild(script);
 
     return () => {
+      analysisRequestId.current += 1;
+      gridControllerRef.current?.clear();
+      gridControllerRef.current = null;
+      markerRef.current?.setMap(null);
+      markerRef.current = null;
+      mapRef.current = null;
+      kakaoRef.current = null;
       script.remove();
     };
   }, []);
@@ -294,6 +405,18 @@ export function MapView({ mode }: { mode: string }) {
     }
   }, [activeLayers]);
 
+
+  // 4번째 버튼의 ON/OFF에 맞춰 격자 표시 및 제거
+  useEffect(() => {
+    const controller = gridControllerRef.current;
+    if (!controller || !mapReady) return;
+
+    if (activeLayers.includes("grid")) {
+      controller.render();
+    } else {
+      controller.clear();
+    }
+  }, [activeLayers, mapReady]);
 
   function getResultInfo(status: string) {
     switch (status) {
@@ -343,6 +466,25 @@ export function MapView({ mode }: { mode: string }) {
 
   return (
     <section>
+      <div className="map-search-wrapper">
+        <form className="map-search-form" onSubmit={searchLocation}>
+          <input aria-label="지역 및 장소 검색" placeholder="지역, 주소 또는 장소 검색"
+            value={searchText} onChange={e => { setSearchText(e.target.value); setSearchError(""); }} />
+          {searchText && <button type="button" onClick={() => { setSearchText(""); setSuggestions([]); }}>×</button>}
+          <button type="submit">검색</button>
+        </form>
+        {suggestions.length > 0 && <ul className="map-search-suggestions">
+          {suggestions.map((item, i) => <li key={`${item.name}-${i}`}>
+            <button type="button" onClick={() => {
+              setSearchText(item.name); setSuggestions([]); setSearchError("");
+              choosePoint(item.lat, item.lng, item.name);
+              mapRef.current?.setLevel(5);
+            }}>{item.name}</button>
+          </li>)}
+        </ul>}
+        {searchError && <p role="alert">{searchError}</p>}
+        {selectedLocation && <p>선택 위치: {locationName} ({selectedLocation.latitude.toFixed(5)}, {selectedLocation.longitude.toFixed(5)})</p>}
+      </div>
       <div className="map-header">
         <div className="info-panels">
           {activeLayers.map((layerId) => {

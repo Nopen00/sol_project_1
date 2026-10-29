@@ -38,7 +38,7 @@ export default function Main() {
     e.preventDefault();
     const trimmed = keyword.trim();
     if (!trimmed) return;
-    navigate(`/map?q=${encodeURIComponent(trimmed)}`);
+    navigate(`/map/restricted?q=${encodeURIComponent(trimmed)}`);
   };
 
   return (

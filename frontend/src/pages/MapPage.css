@@ -37,3 +37,12 @@
   display: flex;
   gap: var(--space-3);
 }
+
+/* Jihoon 검색 기능 - front-news 기존 레이아웃 유지 */
+.map-search-wrapper { position:relative; max-width:960px; margin:0 auto 16px; z-index:20; }
+.map-search-form { display:flex; gap:8px; }
+.map-search-form input { flex:1; min-width:0; padding:10px 12px; }
+.map-search-form button { padding:8px 12px; cursor:pointer; }
+.map-search-suggestions { position:absolute; top:42px; left:0; right:0; margin:0; padding:0; list-style:none; background:white; border:1px solid #ddd; max-height:240px; overflow:auto; z-index:30; }
+.map-search-suggestions button { display:block; width:100%; padding:10px; text-align:left; border:0; background:white; cursor:pointer; }
+.map-search-suggestions button:hover { background:#f2f5fa; }
