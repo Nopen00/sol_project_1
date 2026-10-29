@@ -607,13 +607,7 @@ export function MapView({ mode }: { mode: string }) {
             );
           })}
         </div>
-        <DroneSelect
-          options={drones}
-          value={selectedDrone}
-          onChange={setSelectedDrone}
-        />
       </div>
-      {/* <p>선택한 기종 : {selectedDrone}</p> */}
 
       <div className="map-box">
         <p className="map-hint">Ctrl + 휠로 확대·축소</p>
