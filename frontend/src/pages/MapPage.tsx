@@ -186,6 +186,7 @@ export function MapView({ mode }: { mode: string }) {
   };
 
   useEffect(() => {
+    let removeWheel: (() => void) | null = null;
     const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
 
     if (!kakaoKey) {
@@ -211,8 +212,18 @@ export function MapView({ mode }: { mode: string }) {
         };
 
         const map = new kakao.maps.Map(container, options);
+        map.setZoomable(false);
         mapRef.current = map;
         kakaoRef.current = kakao;
+
+        const handleWheel = (e: WheelEvent) => {
+          if (!e.ctrlKey) return; // Ctrl이 안 눌렸으면 그냥 끝내기 (속성 이름: ctrlKey)
+          e.preventDefault(); // 브라우저 자체 확대를 막기
+          const delta = e.deltaY > 0 ? 1 : -1; // 아래로 굴리면 축소, 위로 굴리면 확대
+          map.setLevel(map.getLevel() + delta);
+        };
+        container.addEventListener("wheel", handleWheel, { passive: false });
+        removeWheel = () => container.removeEventListener("wheel", handleWheel);
 
         // 격자 컨트롤러를 지도에 연결
         const gridController = createGridController(kakao.maps, map);
@@ -438,6 +449,7 @@ export function MapView({ mode }: { mode: string }) {
     document.head.appendChild(script);
 
     return () => {
+      removeWheel?.();
       analysisRequestId.current += 1;
       gridControllerRef.current?.clear();
       gridControllerRef.current = null;
@@ -604,6 +616,7 @@ export function MapView({ mode }: { mode: string }) {
       {/* <p>선택한 기종 : {selectedDrone}</p> */}
 
       <div className="map-box">
+        <p className="map-hint">Ctrl + 휠로 확대·축소</p>
         <div className="layer-toggle">
           {LAYERS.map((layer) => (
             <button

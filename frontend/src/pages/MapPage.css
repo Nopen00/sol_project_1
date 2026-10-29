@@ -4,6 +4,19 @@
   position: relative;
 }
 
+.map-hint {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  left: 10px;
+  padding: var(--space-3);
+  background-color: var(--color-blue-100);
+  border-radius: var(--radius-lg);
+  font-size: 15px;
+  font-width: bold;
+  font-style: normal;
+}
+
 .layer-toggle {
   position: absolute;
   right: 10px;
